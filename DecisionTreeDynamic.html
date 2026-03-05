@@ -1,0 +1,1431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Automation Tool Decision Tree</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  /* ===== DESIGN TOKENS ===== */
+  :root {
+    --bg: #0a0c10;
+    --surface: #12151c;
+    --surface2: #1a1e28;
+    --border: #252a38;
+    --border-light: #2e3448;
+    --text: #e8ecf4;
+    --text-muted: #7a8299;
+    --text-dim: #4a5168;
+    --accent: #5b7fff;
+    --accent2: #a78bfa;
+    --accent3: #34d399;
+    --accent4: #fb923c;
+    --accent5: #f472b6;
+
+    --n8n: #ea4b3e;
+    --workato: #1a56db;
+    --copilot: #7c3aed;
+    --thinkai: #0891b2;
+    --azure: #0ea5e9;
+    --power: #8b5cf6;
+    --rpa: #64748b;
+
+    --radius: 12px;
+    --radius-lg: 18px;
+    --transition: 0.22s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ===== BACKGROUND ===== */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 10% 0%, rgba(91,127,255,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 50% at 90% 100%, rgba(167,139,250,0.06) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ===== LAYOUT ===== */
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 24px 80px; position: relative; z-index: 1; }
+
+  /* ===== HEADER ===== */
+  header {
+    padding: 52px 0 40px;
+    text-align: center;
+  }
+  .header-tag {
+    display: inline-block;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: rgba(91,127,255,0.1);
+    border: 1px solid rgba(91,127,255,0.25);
+    padding: 5px 14px;
+    border-radius: 100px;
+    margin-bottom: 20px;
+  }
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(28px, 5vw, 52px);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    margin-bottom: 14px;
+    background: linear-gradient(135deg, #e8ecf4 20%, #7a8299 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .subtitle {
+    font-size: 13px;
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+    max-width: 540px;
+    margin: 0 auto 32px;
+    line-height: 1.7;
+  }
+
+  /* ===== LEGEND ===== */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 44px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--text-muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 6px 12px;
+    border-radius: 100px;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  .legend-item:hover { border-color: var(--border-light); color: var(--text); }
+  .legend-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* ===== RESET / NAV ===== */
+  .controls {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 36px;
+  }
+  .btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    padding: 9px 20px;
+    border-radius: 8px;
+    border: 1px solid var(--border-light);
+    background: var(--surface);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  .btn:hover { background: var(--surface2); color: var(--text); border-color: var(--accent); }
+  .btn.primary {
+    background: rgba(91,127,255,0.15);
+    border-color: rgba(91,127,255,0.4);
+    color: var(--accent);
+  }
+  .btn.primary:hover { background: rgba(91,127,255,0.25); }
+
+  /* ===== BREADCRUMB ===== */
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-bottom: 28px;
+    min-height: 24px;
+  }
+  .breadcrumb-item { color: var(--text-muted); cursor: pointer; transition: var(--transition); }
+  .breadcrumb-item:hover { color: var(--accent); }
+  .breadcrumb-sep { color: var(--text-dim); }
+  .breadcrumb-current { color: var(--text); }
+
+  /* ===== NODE / QUESTION CARD ===== */
+  .question-card {
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    padding: 32px 36px;
+    margin-bottom: 24px;
+    position: relative;
+    animation: fadeSlide 0.3s ease forwards;
+  }
+  @keyframes fadeSlide {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .question-number {
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+  .question-text {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(16px, 2.5vw, 22px);
+    font-weight: 700;
+    line-height: 1.35;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+  .question-hint {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 28px;
+    line-height: 1.6;
+  }
+
+  /* ===== OPTIONS GRID ===== */
+  .options-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+  }
+  .option-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    text-align: left;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .option-btn:hover {
+    border-color: var(--accent);
+    background: rgba(91,127,255,0.07);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  }
+  .option-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .option-label { font-weight: 500; color: var(--text); display: block; margin-bottom: 4px; font-size: 13px; }
+  .option-desc { color: var(--text-muted); font-size: 11px; }
+
+  /* ===== RESULT CARD ===== */
+  .result-section {
+    animation: fadeSlide 0.35s ease forwards;
+  }
+  .result-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .result-badge {
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 5px 14px;
+    border-radius: 100px;
+  }
+  .result-title {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(18px, 3vw, 26px);
+    font-weight: 800;
+    line-height: 1.25;
+    margin-bottom: 6px;
+  }
+
+  .tool-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .tool-card {
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    border: 1px solid;
+    position: relative;
+    overflow: hidden;
+    transition: var(--transition);
+  }
+  .tool-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.04;
+    background: currentColor;
+  }
+  .tool-card:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0,0,0,0.4); }
+  .tool-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .tool-icon { font-size: 28px; }
+  .tool-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+  }
+  .tool-tag {
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 100px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+  .tool-why {
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+  }
+  .tool-strengths {
+    list-style: none;
+  }
+  .tool-strengths li {
+    font-size: 11px;
+    color: var(--text-muted);
+    padding: 4px 0;
+    padding-left: 16px;
+    position: relative;
+    line-height: 1.5;
+  }
+  .tool-strengths li::before {
+    content: '▸';
+    position: absolute;
+    left: 0;
+    color: var(--text-dim);
+  }
+  .tool-note {
+    margin-top: 10px;
+    font-size: 11px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border-left: 3px solid;
+    line-height: 1.5;
+  }
+  .tool-primary { font-size: 11px; padding: 3px 8px; border-radius: 6px; font-weight: 600; display: inline-block; margin-bottom: 8px; }
+
+  .vs-note {
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    margin-bottom: 20px;
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--text-muted);
+  }
+  .vs-note strong { color: var(--text); font-family: 'Syne', sans-serif; display: block; margin-bottom: 8px; font-size: 13px; }
+
+  .scenario-label {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+  }
+  .scenario-text {
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+    line-height: 1.45;
+  }
+
+  /* ===== TOOL COLOR VARS ===== */
+  .c-n8n     { --tc: var(--n8n); color: var(--n8n); border-color: rgba(234,75,62,0.3); }
+  .c-workato { --tc: var(--workato); color: var(--workato); border-color: rgba(26,86,219,0.3); }
+  .c-copilot { --tc: var(--copilot); color: var(--copilot); border-color: rgba(124,58,237,0.3); }
+  .c-thinkai { --tc: var(--thinkai); color: var(--thinkai); border-color: rgba(8,145,178,0.3); }
+  .c-azure   { --tc: var(--azure); color: var(--azure); border-color: rgba(14,165,233,0.3); }
+  .c-power   { --tc: var(--power); color: var(--power); border-color: rgba(139,92,246,0.3); }
+  .c-rpa     { --tc: var(--rpa); color: var(--rpa); border-color: rgba(100,116,139,0.3); }
+
+  .tag-bg-n8n     { background: rgba(234,75,62,0.15); color: var(--n8n); }
+  .tag-bg-workato { background: rgba(26,86,219,0.15); color: var(--workato); }
+  .tag-bg-copilot { background: rgba(124,58,237,0.15); color: var(--copilot); }
+  .tag-bg-thinkai { background: rgba(8,145,178,0.15); color: var(--thinkai); }
+  .tag-bg-azure   { background: rgba(14,165,233,0.15); color: var(--azure); }
+  .tag-bg-power   { background: rgba(139,92,246,0.15); color: var(--power); }
+  .tag-bg-rpa     { background: rgba(100,116,139,0.15); color: var(--rpa); }
+
+  /* ===== EDIT MODE ===== */
+  .edit-panel {
+    display: none;
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    margin-top: 24px;
+  }
+  .edit-panel.open { display: block; }
+  .edit-panel h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--text);
+  }
+  .edit-panel textarea {
+    width: 100%;
+    min-height: 320px;
+    background: var(--bg);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 16px;
+    resize: vertical;
+    line-height: 1.6;
+    outline: none;
+    transition: var(--transition);
+  }
+  .edit-panel textarea:focus { border-color: var(--accent); }
+  .edit-actions { display: flex; gap: 10px; margin-top: 12px; }
+
+  /* ===== PROGRESS ===== */
+  .progress-bar {
+    height: 2px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-bottom: 32px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+
+  /* ===== FOOTER ===== */
+  footer {
+    text-align: center;
+    padding: 32px 0 0;
+    font-size: 11px;
+    color: var(--text-dim);
+    border-top: 1px solid var(--border);
+    margin-top: 56px;
+  }
+
+  @media (max-width: 600px) {
+    .options-grid { grid-template-columns: 1fr; }
+    .tool-cards-grid { grid-template-columns: 1fr; }
+    .question-card { padding: 22px 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-tag">Automation Tool Selector</div>
+    <h1>Which Tool Should<br>You Use?</h1>
+    <p class="subtitle">Answer a few questions to find the right automation or AI platform for your use case. Multiple tools may apply — we'll tell you when.</p>
+  </header>
+
+  <!-- LEGEND -->
+  <div class="legend" id="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:var(--n8n)"></span>n8n</div>
+    <div class="legend-item"><span class="legend-dot" style="background:var(--workato)"></span>Workato</div>
+    <div class="legend-item"><span class="legend-dot" style="background:var(--copilot)"></span>MS Copilot Studio</div>
+    <div class="legend-item"><span class="legend-dot" style="background:var(--thinkai)"></span>Thunk.ai</div>
+    <div class="legend-item"><span class="legend-dot" style="background:var(--azure)"></span>Azure AI Foundry</div>
+    <div class="legend-item"><span class="legend-dot" style="background:var(--power)"></span>Power Platform</div>
+    <div class="legend-item"><span class="legend-dot" style="background:var(--rpa)"></span>RPA (last resort)</div>
+  </div>
+
+  <!-- CONTROLS -->
+  <div class="controls">
+    <button class="btn primary" onclick="resetTree()">↺ Start Over</button>
+    <button class="btn" onclick="toggleEdit()">✎ Edit Tree Data</button>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+
+  <!-- BREADCRUMB -->
+  <div class="breadcrumb" id="breadcrumb"></div>
+
+  <!-- MAIN CONTENT -->
+  <div id="treeContent"></div>
+
+  <!-- EDIT PANEL -->
+  <div class="edit-panel" id="editPanel">
+    <h3>✎ Edit Tree Data (JSON)</h3>
+    <p style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">Modify the tree structure below. Changes apply immediately on "Apply".</p>
+    <textarea id="editTextarea"></textarea>
+    <div class="edit-actions">
+      <button class="btn primary" onclick="applyEdit()">Apply Changes</button>
+      <button class="btn" onclick="toggleEdit()">Cancel</button>
+      <button class="btn" onclick="resetEditData()">Reset to Default</button>
+    </div>
+    <div id="editError" style="font-size:11px;color:#f87171;margin-top:8px;"></div>
+  </div>
+
+  <footer>
+    Automation Tool Decision Tree &nbsp;·&nbsp; Editable &amp; Interactive &nbsp;·&nbsp; Built for internal use
+  </footer>
+</div>
+
+<script>
+// =====================================================
+// TREE DATA — Edit here or via the Edit Panel in UI
+// =====================================================
+const DEFAULT_TREE = {
+  id: "root",
+  question: "What is the primary goal of your initiative?",
+  hint: "Choose the option that best describes what you're trying to achieve.",
+  number: "Q1",
+  options: [
+    {
+      icon: "🤖",
+      label: "Build an AI-powered assistant or chatbot",
+      desc: "Conversational AI, virtual agents, Q&A bots, or employee-facing assistants",
+      next: "ai_assistant"
+    },
+    {
+      icon: "🔗",
+      label: "Integrate systems & automate workflows",
+      desc: "Connect apps, move data, trigger actions across platforms",
+      next: "integration"
+    },
+    {
+      icon: "🖥️",
+      label: "Automate tasks on a desktop or legacy system",
+      desc: "Interact with UI, legacy apps, ERP screens, or apps with no API",
+      next: "legacy_ui"
+    },
+    {
+      icon: "📱",
+      label: "Build low-code apps or internal tools",
+      desc: "Forms, portals, dashboards, approval flows for business users",
+      next: "lowcode_apps"
+    },
+    {
+      icon: "🧠",
+      label: "Build a custom AI model or agentic pipeline",
+      desc: "Fine-tuning, RAG pipelines, multi-agent orchestration, LLM ops",
+      next: "custom_ai"
+    }
+  ]
+};
+
+const NODES = {
+
+  // ───────────────────────────────
+  // BRANCH: AI ASSISTANT
+  // ───────────────────────────────
+  ai_assistant: {
+    id: "ai_assistant",
+    question: "Who will use this AI assistant?",
+    hint: "The user base significantly influences the right tool choice.",
+    number: "Q2",
+    options: [
+      {
+        icon: "👔",
+        label: "Microsoft 365 employees (Teams, Outlook, SharePoint)",
+        desc: "Internal staff who live in the MS ecosystem",
+        next: "ms_copilot_result"
+      },
+      {
+        icon: "🌐",
+        label: "Customers or external users",
+        desc: "Public-facing chatbot, support bot, or branded experience",
+        next: "ai_external"
+      },
+      {
+        icon: "🏢",
+        label: "Enterprise teams needing reliable agentic process automation",
+        desc: "IT, HR, ops, or compliance teams running complex multi-step workflows with AI agents",
+        next: "thinkai_result"
+      },
+      {
+        icon: "⚗️",
+        label: "Developers or data scientists building AI products",
+        desc: "Internal platform teams building AI-native apps",
+        next: "azure_foundry_result"
+      }
+    ]
+  },
+
+  ai_external: {
+    id: "ai_external",
+    question: "What's the complexity of the external bot?",
+    hint: "Simple FAQ vs. multi-step reasoning changes the recommendation.",
+    number: "Q3",
+    options: [
+      {
+        icon: "💬",
+        label: "Simple FAQ, lead gen, or support deflection",
+        desc: "Structured flows, limited intents, low reasoning required",
+        next: "copilot_or_thinkai_result"
+      },
+      {
+        icon: "🧩",
+        label: "Complex reasoning, document search, or personalization",
+        desc: "Retrieval-augmented, multi-turn, contextual responses",
+        next: "azure_thinkai_result"
+      }
+    ]
+  },
+
+  // ───────────────────────────────
+  // BRANCH: INTEGRATION / WORKFLOW
+  // ───────────────────────────────
+  integration: {
+    id: "integration",
+    question: "What describes your integration context best?",
+    hint: "Team size, tech ownership, and compliance requirements matter here.",
+    number: "Q2",
+    options: [
+      {
+        icon: "🏠",
+        label: "Self-hosted or open-source preferred, developer-led",
+        desc: "You want full control, custom code, no vendor lock-in",
+        next: "n8n_result"
+      },
+      {
+        icon: "🏛️",
+        label: "Enterprise-grade, governed, compliance-heavy",
+        desc: "SOC2, audit trails, IT-approved, complex multi-team flows",
+        next: "workato_result"
+      },
+      {
+        icon: "💼",
+        label: "Microsoft stack (Dynamics, SharePoint, Teams, Azure)",
+        desc: "Your org is Microsoft-first and uses M365 broadly",
+        next: "power_platform_result"
+      },
+      {
+        icon: "🔀",
+        label: "Mix of cloud + on-prem + legacy, high volume",
+        desc: "Hybrid environment, iPaaS needs, many endpoints",
+        next: "workato_n8n_result"
+      }
+    ]
+  },
+
+  // ───────────────────────────────
+  // BRANCH: LEGACY / UI AUTOMATION
+  // ───────────────────────────────
+  legacy_ui: {
+    id: "legacy_ui",
+    question: "Does the system have an accessible API or modern interface?",
+    hint: "API availability is the key decision point for RPA vs. integration tools.",
+    number: "Q2",
+    options: [
+      {
+        icon: "✅",
+        label: "Yes — it has an API or can be connected via webhooks",
+        desc: "Modern or semi-modern system with integration capability",
+        next: "integration"
+      },
+      {
+        icon: "❌",
+        label: "No — it's a legacy app, thick client, or ERP screen",
+        desc: "You must click through UI, use keyboard macros, or screen-scrape",
+        next: "rpa_confirm"
+      }
+    ]
+  },
+
+  rpa_confirm: {
+    id: "rpa_confirm",
+    question: "Before going RPA — can the process be re-engineered?",
+    hint: "RPA is a last resort. Even 2-3 weeks of API enablement beats years of brittle RPA maintenance.",
+    number: "Q3",
+    options: [
+      {
+        icon: "🔧",
+        label: "Yes — we could expose an API or modernise the system",
+        desc: "Invest in enabling integration properly",
+        next: "integration"
+      },
+      {
+        icon: "🚫",
+        label: "No — system is frozen, unsupported, or change is blocked",
+        desc: "RPA is the only viable path",
+        next: "rpa_result"
+      }
+    ]
+  },
+
+  // ───────────────────────────────
+  // BRANCH: LOW CODE APPS
+  // ───────────────────────────────
+  lowcode_apps: {
+    id: "lowcode_apps",
+    question: "What's the Microsoft licensing situation?",
+    hint: "Power Platform economics depend heavily on existing M365/D365 licensing.",
+    number: "Q2",
+    options: [
+      {
+        icon: "✅",
+        label: "We have M365 / Dynamics / Azure licenses already",
+        desc: "Power Platform makes economic sense — likely already included",
+        next: "power_platform_result"
+      },
+      {
+        icon: "🔓",
+        label: "No Microsoft stack — or we want a neutral platform",
+        desc: "Open ecosystem preferred, or mixed SaaS environment",
+        next: "n8n_workato_apps_result"
+      },
+      {
+        icon: "🤝",
+        label: "We need AI embedded in the app (not just automation)",
+        desc: "Apps that use LLMs, summarization, or smart recommendations",
+        next: "copilot_azure_result"
+      }
+    ]
+  },
+
+  // ───────────────────────────────
+  // BRANCH: CUSTOM AI / AGENTIC
+  // ───────────────────────────────
+  custom_ai: {
+    id: "custom_ai",
+    question: "What's the deployment & governance requirement?",
+    hint: "Cloud sovereignty, data residency, and internal platforms affect the choice.",
+    number: "Q2",
+    options: [
+      {
+        icon: "☁️",
+        label: "Azure-native or Microsoft cloud, enterprise governance needed",
+        desc: "You need MLOps, prompt management, model deployment on Azure",
+        next: "azure_foundry_result"
+      },
+      {
+        icon: "🌍",
+        label: "Multi-cloud or open-source, flexible deployment",
+        desc: "You want portability, open LLMs, or are not Azure-committed",
+        next: "azure_n8n_result"
+      },
+      {
+        icon: "🏢",
+        label: "No-code agentic automation with high reliability requirements",
+        desc: "Need AI agents to reliably execute complex enterprise processes without deep dev effort",
+        next: "thinkai_result"
+      }
+    ]
+  },
+
+  // =====================================================
+  // RESULT NODES
+  // =====================================================
+
+  ms_copilot_result: {
+    id: "ms_copilot_result",
+    type: "result",
+    scenario: "AI agents for Microsoft 365 employees & enterprise processes",
+    title: "Microsoft Copilot Studio",
+    badge: "Primary Recommendation",
+    badgeClass: "tag-bg-copilot",
+    tools: [
+      {
+        key: "copilot",
+        name: "MS Copilot Studio",
+        icon: "🤝",
+        tag: "Best Fit",
+        tagClass: "tag-bg-copilot",
+        why: "Copilot Studio is Microsoft's fully managed SaaS agent platform — the foundation for agentic business transformation in the Microsoft ecosystem. It now supports autonomous agents, deep reasoning, computer-use automation, MCP integration, and multi-agent orchestration across 1,400+ systems.",
+        strengths: [
+          "Build autonomous agents that react to events and execute tasks independently",
+          "Deep reasoning agents for complex analysis (demand forecasting, RFP, lead scoring)",
+          "Computer-use capability: agents operate apps/websites via virtual mouse & keyboard",
+          "Connects to 1,400+ systems via MCP, Power Platform connectors & Microsoft Graph",
+          "Generative orchestration: no need to define every conversation flow manually",
+          "GPT-5 / GPT-5.2 model choice + Anthropic & third-party models available",
+          "Microsoft Entra Agent ID: every agent gets a governed identity for fleet management",
+          "WhatsApp, Teams, SharePoint, web channels — including native external deployment",
+          "Microsoft Defender integration for real-time agent threat protection"
+        ],
+        note: "Best for Microsoft-committed orgs wanting a governed, no-code agent platform tightly integrated into M365. As of late 2025, it has evolved far beyond a simple chatbot builder into a full agentic automation platform.",
+        noteClass: "c-copilot"
+      }
+    ],
+    vs: "For custom model fine-tuning, RAG pipelines, or multi-cloud AI workloads, use Microsoft Foundry (formerly Azure AI Foundry) as the backend. Copilot Studio is the front-end agent layer; Foundry is the model and infrastructure layer."
+  },
+
+  thinkai_result: {
+    id: "thinkai_result",
+    type: "result",
+    scenario: "Reliable agentic workflow automation for enterprise processes",
+    title: "Thunk.ai",
+    badge: "Primary Recommendation",
+    badgeClass: "tag-bg-thinkai",
+    tools: [
+      {
+        key: "thinkai",
+        name: "Thunk.ai",
+        icon: "🤖",
+        tag: "Best Fit",
+        tagClass: "tag-bg-thinkai",
+        why: "Thunk.ai is a self-service AI agent platform purpose-built for reliable enterprise workflow automation. Its flagship no-code agentic platform combines rapid development with industry-leading execution reliability — achieving 99% accuracy with 94% full autonomy on complex ITSM workflows.",
+        strengths: [
+          "99% AI reliability benchmark on enterprise ITSM workflows",
+          "No-code design: workflows built entirely in natural language",
+          "Human-in-the-loop controls with granular autonomy settings",
+          "Supports OpenAI, Google, and Anthropic LLMs (bring your own key)",
+          "Modular sub-agents, MCP servers, and agentic app benchmarking",
+          "Connects to Google Drive, SharePoint, databases & business apps",
+          "Versioned thunks for deployment stability & consistency",
+          "Private cloud / single-tenant deployment for enterprise data control"
+        ],
+        note: "Best when you need provably reliable AI agents running complex, multi-step business workflows — not just chatbots. Ideal for ITSM, document processing, HR, and operations teams.",
+        noteClass: "c-thinkai"
+      }
+    ],
+    vs: "Thunk.ai focuses on reliable agentic execution, not model training. For custom fine-tuned models or RAG at scale, pair with Microsoft Foundry as the model backend. For Teams/Outlook surfacing, Copilot Studio can act as the front-end channel while Thunk.ai runs the agentic workflows."
+  },
+
+  azure_foundry_result: {
+    id: "azure_foundry_result",
+    type: "result",
+    scenario: "Custom AI model development, multi-agent pipelines & LLM ops",
+    title: "Microsoft Foundry (Azure AI Foundry)",
+    badge: "Primary Recommendation",
+    badgeClass: "tag-bg-azure",
+    tools: [
+      {
+        key: "azure",
+        name: "Microsoft Foundry",
+        icon: "⚗️",
+        tag: "Best Fit",
+        tagClass: "tag-bg-azure",
+        why: "Rebranded from Azure AI Foundry at Ignite 2025, Microsoft Foundry is the unified enterprise AI platform for building, deploying, and governing AI agents and models at scale. It's the only cloud with both OpenAI GPT and Anthropic Claude models side-by-side, used by 80% of Fortune 500 companies.",
+        strengths: [
+          "11,000+ models including GPT-5.2, Claude (Haiku/Sonnet/Opus), Mistral, DeepSeek, Llama",
+          "Only cloud platform with both OpenAI GPT series AND Anthropic Claude models",
+          "Foundry Agent Service: hosted multi-agent orchestration, persistent memory, MCP support",
+          "Foundry IQ: RAG engine powered by Azure AI Search — grounded in SharePoint, ADLS, web",
+          "Fine-tuning, eval frameworks, synthetic data generation, and model safety leaderboards",
+          "1,000+ prebuilt tool connectors (SAP, UiPath, GitHub, Hugging Face, Azure SQL) via MCP",
+          "Foundry Control Plane: enterprise observability, RBAC, Azure Policy, Entra ID governance",
+          "GPT-5.1 Codex Max (GA): autonomous multi-agent coding pipelines with 400K context",
+          "Free to explore; costs at deployment/model usage level only"
+        ],
+        note: "Best for developer/data science teams building production-grade AI apps, agentic pipelines, or custom models. Not a no-code tool — requires Azure subscription and dev skills.",
+        noteClass: "c-azure"
+      }
+    ],
+    vs: "For surfacing AI to M365 employees without code, use Copilot Studio (which can use Foundry as its model backend). For no-code agentic process automation on top of any LLM, consider Thunk.ai. Foundry is the model/infrastructure layer; Copilot Studio and Thunk.ai are execution layers on top."
+  },
+
+  copilot_or_thinkai_result: {
+    id: "copilot_or_thinkai_result",
+    type: "result",
+    scenario: "Simple bot or agentic assistant for external users",
+    title: "Copilot Studio or Thunk.ai — Depends on Autonomy Needed",
+    badge: "Multiple Options",
+    badgeClass: "tag-bg-copilot",
+    tools: [
+      {
+        key: "copilot",
+        name: "MS Copilot Studio",
+        icon: "🤝",
+        tag: "If Microsoft-stack",
+        tagClass: "tag-bg-copilot",
+        why: "Quickly build structured, flow-based chatbots with no-code. Good for deflecting simple support queries on web or Teams.",
+        strengths: [
+          "Fast no-code bot builder",
+          "Good for structured FAQ flows",
+          "Easy handoff to human agents",
+          "Native in Teams & web chat"
+        ],
+        note: "Choose if the org is already paying for M365 licensing.",
+        noteClass: "c-copilot"
+      },
+      {
+        key: "thinkai",
+        name: "Thunk.ai",
+        icon: "🤖",
+        tag: "If agentic reliability needed",
+        tagClass: "tag-bg-thinkai",
+        why: "Better if the external-facing workflow requires multi-step autonomous actions, not just conversation. Thunk.ai's no-code agent platform handles complex process execution reliably — e.g. auto-triaging support tickets end-to-end.",
+        strengths: [
+          "Agentic execution, not just conversational responses",
+          "No-code natural language workflow design",
+          "Human escalation controls (6% escalation rate benchmark)",
+          "Reliable enough for production enterprise automation"
+        ],
+        note: "Choose Thunk.ai when the 'bot' needs to actually do things autonomously — not just answer questions.",
+        noteClass: "c-thinkai"
+      }
+    ],
+    vs: "The tiebreaker: does the user need answers (→ Copilot Studio) or does the system need to take autonomous multi-step actions (→ Thunk.ai)?"
+  },
+
+  azure_thinkai_result: {
+    id: "azure_thinkai_result",
+    type: "result",
+    scenario: "Complex agentic workflows with custom AI models",
+    title: "Azure AI Foundry + Thunk.ai",
+    badge: "Multiple Options",
+    badgeClass: "tag-bg-azure",
+    tools: [
+      {
+        key: "azure",
+        name: "Microsoft Foundry",
+        icon: "⚗️",
+        tag: "Custom LLM / RAG",
+        tagClass: "tag-bg-azure",
+        why: "Microsoft Foundry (rebranded from Azure AI Foundry at Ignite 2025) is the only cloud with both OpenAI GPT-5.2 and Anthropic Claude side-by-side. Build fully custom RAG pipelines, fine-tune on your domain data, and deploy with enterprise-grade Azure security and multi-agent orchestration.",
+        strengths: [
+          "Full control over the AI model stack",
+          "Custom fine-tuning and RAG pipelines",
+          "Multi-modal support (text, image, speech)",
+          "Production MLOps and monitoring"
+        ],
+        note: "Best if you have dev resources and need enterprise-grade model customisation.",
+        noteClass: "c-azure"
+      },
+      {
+        key: "thinkai",
+        name: "Thunk.ai",
+        icon: "🤖",
+        tag: "Reliable Agentic Execution",
+        tagClass: "tag-bg-thinkai",
+        why: "Where Azure AI Foundry manages the model, Thunk.ai manages reliable agentic execution. Its no-code platform achieves 99% reliability on complex multi-step workflows — with granular human-in-the-loop controls and bring-your-own LLM support.",
+        strengths: [
+          "99% reliability on enterprise workflow automation",
+          "No-code natural language agent design",
+          "Works with OpenAI, Anthropic, Google models",
+          "Controlled autonomy — you set how much AI does alone"
+        ],
+        note: "Use Thunk.ai when you need agents that reliably execute complex business processes, not just generate responses.",
+        noteClass: "c-thinkai"
+      }
+    ],
+    vs: "These tools are complementary: Azure AI Foundry for custom model building and RAG; Thunk.ai for reliable no-code agentic execution on top of any LLM. Thunk.ai can use Azure OpenAI as its model backend via API key."
+  },
+
+  n8n_result: {
+    id: "n8n_result",
+    type: "result",
+    scenario: "Developer-led, self-hosted workflow automation",
+    title: "n8n",
+    badge: "Primary Recommendation",
+    badgeClass: "tag-bg-n8n",
+    tools: [
+      {
+        key: "n8n",
+        name: "n8n",
+        icon: "⚡",
+        tag: "Best Fit",
+        tagClass: "tag-bg-n8n",
+        why: "n8n uniquely combines AI capabilities with business process automation — giving technical teams the flexibility of code with the speed of no-code. Open-source (fair-code licensed), self-hostable, and AI-native with LangChain-powered agent nodes.",
+        strengths: [
+          "Self-hostable with full data sovereignty (air-gapped deployments possible)",
+          "Code nodes: write JavaScript or Python at any step, add npm packages",
+          "400+ native connectors + HTTP Request node for any REST/GraphQL API",
+          "AI-native: LangChain integration, RAG via vector DBs, LLM agent workflows",
+          "MCP support: n8n workflows are callable by Claude, Lovable & other AI clients",
+          "900+ community templates; Git-based version control for workflow lifecycle",
+          "Per-execution pricing model — far cheaper than per-task iPaaS at high volume",
+          "Enterprise: SSO, RBAC, secrets manager (AWS, Azure Key Vault, GCP), air-gap deploy"
+        ],
+        note: "Best when engineers own automation, data must stay on-prem, or you need deep AI agent pipelines at low cost. Requires DevOps capability to self-host and maintain.",
+        noteClass: "c-n8n"
+      }
+    ],
+    vs: "n8n is not suited for non-technical business users building their own automations — that's where Power Platform or Workato win. If the org grows to need enterprise audit trails, IT governance, and citizen-developer access, consider graduating to Workato."
+  },
+
+  workato_result: {
+    id: "workato_result",
+    type: "result",
+    scenario: "Enterprise-grade integration with compliance & governance",
+    title: "Workato",
+    badge: "Primary Recommendation",
+    badgeClass: "tag-bg-workato",
+    tools: [
+      {
+        key: "workato",
+        name: "Workato",
+        icon: "🔄",
+        tag: "Best Fit",
+        tagClass: "tag-bg-workato",
+        why: "Workato is the #1 enterprise iPaaS (Forrester Leader, Q3 2025 — highest scores for Vision, Innovation & Roadmap). It orchestrates workflows, data, and AI agents — and now powers Enterprise MCP for agentic AI across 1,400+ business app connections.",
+        strengths: [
+          "Forrester & Gartner recognised Leader in iPaaS 2025",
+          "1,400+ pre-built connectors including SAP, Salesforce, Workday, ServiceNow",
+          "Enterprise MCP servers: connects AI agents to business apps securely at scale",
+          "Workato Genies: pre-built enterprise AI agents for IT, HR, Finance & CX",
+          "Workato GO: unified search, automation & AI super-app for employees",
+          "Enterprise governance: SOC 2, ISO 27001, PCI, BYOK, role-based access control",
+          "99.9% uptime SLA, auto-scaling, zero-downtime upgrades",
+          "Low-code recipe builder — accessible to IT and business users alike"
+        ],
+        note: "Best for large enterprises requiring IT-governed, auditable, high-volume integration with AI agent orchestration. Workato has significantly expanded beyond iPaaS into agentic orchestration.",
+        noteClass: "c-workato"
+      }
+    ],
+    vs: "For developer-owned, cost-sensitive automation with full self-hosting, n8n is the alternative. For Microsoft-only workflows, Power Platform competes directly. Workato wins when you need multi-cloud, multi-team, compliance-heavy integration WITH emerging agentic AI orchestration."
+  },
+
+  power_platform_result: {
+    id: "power_platform_result",
+    type: "result",
+    scenario: "Microsoft-stack automation, AI-first apps & agentic workflows",
+    title: "Power Platform",
+    badge: "Primary Recommendation",
+    badgeClass: "tag-bg-power",
+    tools: [
+      {
+        key: "power",
+        name: "Power Platform",
+        icon: "💜",
+        tag: "Best Fit",
+        tagClass: "tag-bg-power",
+        why: "Power Platform (Power Automate, Power Apps, Copilot Studio, Power BI, AI Builder) has been fully reimagined for 2025 as an AI-first, agent-driven platform. Power Apps now lets you describe a business problem and a team of agents builds the full-stack app — while Power Automate delivers self-healing, AI-driven automations.",
+        strengths: [
+          "Power Apps 'vibe coding': describe your app in natural language, agents build it end-to-end",
+          "Power Automate: AI-first with generative actions, self-healing automations & ROI analytics",
+          "AI Recorder (Record with Copilot): converts screen + voice into desktop automation flows",
+          "Power Apps MCP Server: agents can invoke app capabilities like form-fill & data exploration",
+          "1,400+ connectors including Teams, SharePoint, Dynamics 365, SAP, Salesforce",
+          "AI Builder: intelligent document processing, OCR, prediction models — no ML expertise needed",
+          "Included in most M365/D365 license bundles — strong cost advantage for Microsoft shops",
+          "Unified governance hub for agents, apps & workflows via Power Platform Admin Center"
+        ],
+        note: "As of late 2025, Power Platform is no longer just a low-code tool — it's an AI-agent platform. Best for Microsoft-committed orgs where business users and developers need to collaborate on intelligent apps and automations without leaving the M365 ecosystem.",
+        noteClass: "c-power"
+      }
+    ],
+    vs: "Premium connector licensing costs can add up at scale — audit before committing. For complex multi-cloud integrations outside Microsoft, Workato or n8n handle non-Microsoft endpoints more natively. Power Platform is strongest when the full workflow lives in the Microsoft ecosystem."
+  },
+
+  workato_n8n_result: {
+    id: "workato_n8n_result",
+    type: "result",
+    scenario: "Hybrid environment with high-volume, mixed endpoints",
+    title: "Workato or n8n — Depends on Governance Needs",
+    badge: "Multiple Options",
+    badgeClass: "tag-bg-workato",
+    tools: [
+      {
+        key: "workato",
+        name: "Workato",
+        icon: "🔄",
+        tag: "Enterprise / Governed",
+        tagClass: "tag-bg-workato",
+        why: "For enterprises that need IT-governed, auditable, high-volume integrations across a complex hybrid landscape with SLA requirements.",
+        strengths: [
+          "On-prem agent for hybrid connectivity",
+          "Enterprise governance and role-based access",
+          "Pre-built for SAP, Workday, Salesforce, etc.",
+          "API-led integration with recipe versioning"
+        ],
+        note: "Choose when IT owns integrations and compliance is non-negotiable.",
+        noteClass: "c-workato"
+      },
+      {
+        key: "n8n",
+        name: "n8n",
+        icon: "⚡",
+        tag: "Developer / Flexible",
+        tagClass: "tag-bg-n8n",
+        why: "For engineering teams that want self-hosted, code-friendly automation across hybrid stacks without enterprise iPaaS costs.",
+        strengths: [
+          "Self-hosted, air-gapped deployment possible",
+          "Custom code nodes for complex transformations",
+          "Lower TCO for high-volume technical workflows"
+        ],
+        note: "Choose when devs own integrations and you want cost control.",
+        noteClass: "c-n8n"
+      }
+    ],
+    vs: "Both tools support hybrid environments. The decision is: IT-governed enterprise (→ Workato) vs. developer-owned technical automation (→ n8n)."
+  },
+
+  n8n_workato_apps_result: {
+    id: "n8n_workato_apps_result",
+    type: "result",
+    scenario: "Low-code apps without the Microsoft stack",
+    title: "n8n + Custom Frontend, or Workato Portal",
+    badge: "Multiple Options",
+    badgeClass: "tag-bg-n8n",
+    tools: [
+      {
+        key: "n8n",
+        name: "n8n",
+        icon: "⚡",
+        tag: "Dev-led",
+        tagClass: "tag-bg-n8n",
+        why: "Use n8n as the automation backbone and pair with a lightweight frontend (React, Retool, etc.) for custom internal tools without vendor lock-in.",
+        strengths: [
+          "Webhook triggers from any frontend",
+          "Flexible backend logic with code nodes",
+          "Cost-effective for high-volume triggers"
+        ],
+        note: "Best for dev teams building internal tools fast.",
+        noteClass: "c-n8n"
+      },
+      {
+        key: "workato",
+        name: "Workato",
+        icon: "🔄",
+        tag: "Enterprise",
+        tagClass: "tag-bg-workato",
+        why: "Workato's recipe-triggered portals and Workbot can serve as lightweight app surfaces in a governed enterprise setting.",
+        strengths: [
+          "Workbot in Teams / Slack as app surface",
+          "Approval workflows with built-in UI",
+          "Role-based recipe management"
+        ],
+        note: "Best when enterprise governance matters even for internal tools.",
+        noteClass: "c-workato"
+      }
+    ],
+    vs: "Neither n8n nor Workato is a full low-code app platform. If you need true forms/apps without MS stack, consider also evaluating Retool or Budibase as a frontend layer."
+  },
+
+  copilot_azure_result: {
+    id: "copilot_azure_result",
+    type: "result",
+    scenario: "Low-code apps with embedded AI capabilities",
+    title: "Power Platform + Azure AI Foundry",
+    badge: "Recommended Combination",
+    badgeClass: "tag-bg-power",
+    tools: [
+      {
+        key: "power",
+        name: "Power Platform",
+        icon: "💜",
+        tag: "App Layer",
+        tagClass: "tag-bg-power",
+        why: "Power Apps provides the low-code UI and workflow layer. Copilot features are natively embedded for AI-assist in forms, Power Automate, and Power BI.",
+        strengths: [
+          "Rapid low-code app development",
+          "Native Copilot AI features embedded",
+          "Power Automate AI Builder for document processing",
+          "Teams integration for distribution"
+        ],
+        note: "Good when business users own the app and M365 licenses are in place.",
+        noteClass: "c-power"
+      },
+      {
+        key: "azure",
+        name: "Microsoft Foundry",
+        icon: "⚗️",
+        tag: "AI Backend",
+        tagClass: "tag-bg-azure",
+        why: "When the AI logic is too complex for Power Platform's AI Builder, use Azure AI Foundry as the custom model backend called from Power Apps / Power Automate.",
+        strengths: [
+          "Custom LLM and RAG endpoints",
+          "Called via HTTP from Power Platform",
+          "More model choice and tuning control"
+        ],
+        note: "Best as a backend when AI complexity exceeds what no-code AI Builder can handle.",
+        noteClass: "c-azure"
+      }
+    ],
+    vs: "Power Platform handles 80% of cases. Add Azure AI Foundry when you need custom models, fine-tuning, or capabilities beyond Copilot Studio's built-in AI."
+  },
+
+  azure_n8n_result: {
+    id: "azure_n8n_result",
+    type: "result",
+    scenario: "Custom AI pipelines on multi-cloud or open-source stack",
+    title: "Azure AI Foundry or n8n AI Agents",
+    badge: "Multiple Options",
+    badgeClass: "tag-bg-azure",
+    tools: [
+      {
+        key: "azure",
+        name: "Microsoft Foundry",
+        icon: "⚗️",
+        tag: "Production AI Platform",
+        tagClass: "tag-bg-azure",
+        why: "The most complete managed platform for building, fine-tuning, and deploying LLM pipelines with enterprise governance. Best for teams that need a proper MLOps environment.",
+        strengths: [
+          "Model catalog with 1,600+ models",
+          "Prompt flow, eval, and fine-tuning",
+          "Azure OpenAI Service access",
+          "Full enterprise security and compliance"
+        ],
+        note: "Choose when you need a governed, scalable AI platform.",
+        noteClass: "c-azure"
+      },
+      {
+        key: "n8n",
+        name: "n8n (AI Agent Nodes)",
+        icon: "⚡",
+        tag: "Lightweight Agentic",
+        tagClass: "tag-bg-n8n",
+        why: "n8n's LangChain-powered AI agent nodes let you rapidly prototype and deploy LLM workflows that combine reasoning with tool use — without a full MLOps platform.",
+        strengths: [
+          "LangChain + OpenAI/Anthropic/Ollama support",
+          "Tool-calling agents with memory",
+          "Trigger agents via webhook, schedule, or event",
+          "Self-hosted with open-source models"
+        ],
+        note: "Choose for fast, lightweight agentic automation. Not a replacement for a full AI platform.",
+        noteClass: "c-n8n"
+      }
+    ],
+    vs: "n8n AI nodes are ideal for agentic automation workflows. Azure AI Foundry is the right choice when you need model training, evaluation frameworks, and production-grade deployment."
+  },
+
+  rpa_result: {
+    id: "rpa_result",
+    type: "result",
+    scenario: "No API available — legacy UI automation required",
+    title: "RPA (Robotic Process Automation)",
+    badge: "Last Resort",
+    badgeClass: "tag-bg-rpa",
+    tools: [
+      {
+        key: "rpa",
+        name: "RPA (UI Path / Power Automate Desktop / AA360)",
+        icon: "🤖",
+        tag: "Last Resort",
+        tagClass: "tag-bg-rpa",
+        why: "RPA should only be used when no API exists and the system cannot be modernised. It automates by mimicking user interactions on screen — powerful for legacy but brittle and expensive to maintain.",
+        strengths: [
+          "Works on any system with a UI (ERP, mainframe, etc.)",
+          "No code changes to the target system needed",
+          "Can handle structured document extraction",
+          "Attended and unattended bot modes"
+        ],
+        note: "⚠️ RPA is brittle — any UI change can break automations. Always have a maintenance plan. Consider RPA + API in hybrid scenarios where some steps can be native integrations.",
+        noteClass: "c-rpa"
+      }
+    ],
+    vs: "RPA tools to evaluate: UiPath (most mature), Microsoft Power Automate Desktop (free with Windows 11/M365), Automation Anywhere 360. If the legacy process could be partially modernised, Thunk.ai's agentic automation or n8n can handle the API-accessible portions, reducing the RPA footprint."
+  }
+};
+
+// =====================================================
+// ENGINE
+// =====================================================
+let treeData = JSON.parse(JSON.stringify(DEFAULT_TREE));
+let nodesData = JSON.parse(JSON.stringify(NODES));
+let history = [];
+let currentNode = null;
+
+const TOTAL_STEPS = 3; // approximate for progress bar
+
+function getNode(id) {
+  if (id === "root") return treeData;
+  return nodesData[id] || null;
+}
+
+function resetTree() {
+  history = [];
+  currentNode = null;
+  renderNode("root");
+}
+
+function goBack(index) {
+  if (index < history.length) {
+    history = history.slice(0, index);
+    const nodeId = index === 0 ? "root" : history[index - 1];
+    renderNode(index === 0 ? "root" : history[history.length - 1]);
+  }
+  // re-render current position
+  if (history.length === 0) {
+    renderNode("root");
+  } else {
+    renderNode(history[history.length - 1]);
+  }
+}
+
+function renderBreadcrumb(nodeId) {
+  const bc = document.getElementById("breadcrumb");
+  const items = [];
+  items.push(`<span class="breadcrumb-item" onclick="goBack(0)">Start</span>`);
+
+  for (let i = 0; i < history.length; i++) {
+    const n = getNode(history[i]);
+    if (!n) continue;
+    items.push(`<span class="breadcrumb-sep">›</span>`);
+    if (i < history.length - 1) {
+      items.push(`<span class="breadcrumb-item" onclick="goBack(${i + 1})">${n.title || n.question?.substring(0, 30) + '…'}</span>`);
+    } else {
+      items.push(`<span class="breadcrumb-current">${n.title || n.question?.substring(0, 30) + '…'}</span>`);
+    }
+  }
+  bc.innerHTML = items.join('');
+}
+
+function updateProgress() {
+  const fill = document.getElementById("progressFill");
+  const pct = Math.min(100, (history.length / TOTAL_STEPS) * 100);
+  fill.style.width = pct + "%";
+  if (history.length > 0) {
+    const node = getNode(history[history.length - 1]);
+    if (node && node.type === "result") fill.style.width = "100%";
+  }
+}
+
+function renderNode(nodeId) {
+  currentNode = nodeId;
+  renderBreadcrumb(nodeId);
+  updateProgress();
+
+  const node = getNode(nodeId);
+  const content = document.getElementById("treeContent");
+
+  if (!node) {
+    content.innerHTML = `<div class="question-card"><p style="color:var(--accent4)">Node not found: ${nodeId}</p></div>`;
+    return;
+  }
+
+  if (node.type === "result") {
+    renderResult(node, content);
+  } else {
+    renderQuestion(node, content);
+  }
+}
+
+function renderQuestion(node, content) {
+  const opts = node.options.map((o, i) => `
+    <button class="option-btn" onclick="selectOption('${o.next}')">
+      <span class="option-icon">${o.icon}</span>
+      <div>
+        <span class="option-label">${o.label}</span>
+        <span class="option-desc">${o.desc}</span>
+      </div>
+    </button>
+  `).join('');
+
+  content.innerHTML = `
+    <div class="question-card">
+      <div class="question-number">${node.number || 'Question'}</div>
+      <div class="question-text">${node.question}</div>
+      <div class="question-hint">${node.hint || ''}</div>
+      <div class="options-grid">${opts}</div>
+    </div>
+  `;
+}
+
+function selectOption(nextId) {
+  history.push(nextId);
+  renderNode(nextId);
+}
+
+function renderResult(node, content) {
+  const toolCards = node.tools.map(t => `
+    <div class="tool-card c-${t.key}">
+      <div class="tool-card-header">
+        <span class="tool-icon">${t.icon}</span>
+        <div>
+          <div class="tool-name" style="color:var(--tc)">${t.name}</div>
+          <span class="tool-tag ${t.tagClass}">${t.tag}</span>
+        </div>
+      </div>
+      <div class="tool-why">${t.why}</div>
+      <ul class="tool-strengths">
+        ${t.strengths.map(s => `<li>${s}</li>`).join('')}
+      </ul>
+      <div class="tool-note ${t.noteClass}" style="background:rgba(0,0,0,0.3);border-color:var(--tc)">
+        💡 ${t.note}
+      </div>
+    </div>
+  `).join('');
+
+  content.innerHTML = `
+    <div class="result-section">
+      <div class="question-card" style="border-color:var(--border-light)">
+        <div class="result-header">
+          <span class="result-badge ${node.badgeClass}">${node.badge}</span>
+        </div>
+        <div class="scenario-label">Use Case</div>
+        <div class="scenario-text">${node.scenario}</div>
+        <div class="result-title">${node.title}</div>
+      </div>
+      <div class="tool-cards-grid">${toolCards}</div>
+      ${node.vs ? `<div class="vs-note"><strong>When to mix tools or reconsider:</strong>${node.vs}</div>` : ''}
+      <div class="controls" style="margin-top:16px">
+        <button class="btn primary" onclick="resetTree()">↺ Start a New Scenario</button>
+        ${history.length > 1 ? `<button class="btn" onclick="goBack(${history.length - 1})">← Go Back</button>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+// =====================================================
+// EDIT PANEL
+// =====================================================
+function toggleEdit() {
+  const panel = document.getElementById("editPanel");
+  panel.classList.toggle("open");
+  if (panel.classList.contains("open")) {
+    const combined = { root: treeData, nodes: nodesData };
+    document.getElementById("editTextarea").value = JSON.stringify(combined, null, 2);
+    document.getElementById("editError").textContent = "";
+  }
+}
+
+function applyEdit() {
+  const ta = document.getElementById("editTextarea");
+  const errEl = document.getElementById("editError");
+  try {
+    const parsed = JSON.parse(ta.value);
+    if (!parsed.root || !parsed.nodes) throw new Error("JSON must have 'root' and 'nodes' keys.");
+    treeData = parsed.root;
+    nodesData = parsed.nodes;
+    errEl.textContent = "";
+    document.getElementById("editPanel").classList.remove("open");
+    resetTree();
+  } catch (e) {
+    errEl.textContent = "❌ Error: " + e.message;
+  }
+}
+
+function resetEditData() {
+  treeData = JSON.parse(JSON.stringify(DEFAULT_TREE));
+  nodesData = JSON.parse(JSON.stringify(NODES));
+  const combined = { root: treeData, nodes: nodesData };
+  document.getElementById("editTextarea").value = JSON.stringify(combined, null, 2);
+  document.getElementById("editError").textContent = "✅ Reset to default data. Click Apply to confirm.";
+}
+
+// =====================================================
+// INIT
+// =====================================================
+resetTree();
+</script>
+</body>
+</html>
