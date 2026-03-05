@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Automation Tool Decision Tree — Full Static Flow</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f0ede6;--paper:#faf8f4;--ink:#16130e;--ink2:#3a3326;--ink3:#7a6f62;
+  --rule:#ddd7cc;--rule2:#c9c2b5;
+  --n8n:#b91c1c;--workato:#1e40af;--copilot:#6d28d9;--thunk:#0e7490;
+  --foundry:#0369a1;--power:#7c3aed;--rpa:#64748b;--multi:#92400e;
+}
+html{font-size:14px}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+.page{max-width:1700px;margin:0 auto;padding:48px 36px 96px}
+
+/* HEADER */
+.hdr{border-bottom:2.5px solid var(--ink);padding-bottom:24px;margin-bottom:36px;display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:16px}
+.hdr h1{font-size:clamp(24px,3.5vw,44px);font-weight:900;letter-spacing:-.04em;line-height:1.05}
+.hdr p{font-size:12px;color:var(--ink3);margin-top:6px}
+.hdr-stamp{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--ink3);text-align:right;line-height:2}
+
+/* LEGEND */
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;margin-bottom:36px;padding:14px 18px;background:var(--paper);border:1px solid var(--rule2);border-radius:6px;align-items:center}
+.legend-title{font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--ink3);width:100%;margin-bottom:2px}
+.leg{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--ink2);font-weight:500}
+.swatch{width:20px;height:9px;border-radius:3px;flex-shrink:0}
+.sw-q{width:14px;height:14px;border-radius:3px;background:var(--ink);flex-shrink:0;transform:rotate(45deg)}
+.sw-multi{width:20px;height:9px;border-radius:3px;border:1.5px solid var(--multi);background:#fef3c7;flex-shrink:0}
+.sw-route{width:20px;height:9px;border-radius:3px;border:1.5px solid #15803d;background:#f0fdf4;flex-shrink:0}
+
+/* SECTION HEADING */
+.sec-head{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink3);border-top:1px dashed var(--rule2);padding-top:12px;margin:36px 0 20px}
+
+/* FLOW */
+.flow{background:var(--paper);border:1px solid var(--rule2);border-radius:8px;overflow-x:auto;padding:36px 28px 44px}
+svg{display:block;overflow:visible}
+
+/* TOOL CARDS */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:20px}
+.tcard{background:var(--paper);border:1px solid var(--rule2);border-radius:10px;overflow:hidden}
+.tcard:hover{box-shadow:0 6px 20px rgba(0,0,0,.1)}
+.tcard-head{padding:16px 18px 12px;color:white}
+.tcard-name{font-size:15px;font-weight:800;letter-spacing:-.02em;margin-bottom:2px}
+.tcard-tag{font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;opacity:.8}
+.tcard-body{padding:14px 18px 18px}
+.tcard-why{font-size:11.5px;line-height:1.65;color:var(--ink2);margin-bottom:12px}
+.tcard-label{font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);margin-bottom:6px;margin-top:10px}
+.tcard-strengths{list-style:none}
+.tcard-strengths li{font-size:10.5px;color:var(--ink2);padding:3px 0 3px 14px;position:relative;line-height:1.5}
+.tcard-strengths li::before{content:'▸';position:absolute;left:0;color:var(--ink3)}
+.tcard-note{margin-top:12px;padding:9px 12px;border-radius:6px;border-left:3px solid;font-size:10.5px;line-height:1.6;background:rgba(0,0,0,.03);color:var(--ink2)}
+.tcard-vs{margin-top:10px;font-size:10px;color:var(--ink3);line-height:1.6;font-style:italic}
+.tcard-rpa-warn{background:#fef2f2;border-radius:6px;padding:10px 12px;margin-top:10px;font-size:10.5px;color:#c0392b;line-height:1.6}
+
+/* BUCKETS */
+.buckets-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px}
+.bucket{border:1.5px solid var(--multi);background:#fffbeb;border-radius:8px;padding:16px 18px}
+.bucket-title{font-size:11px;font-weight:800;color:var(--multi);letter-spacing:.04em;margin-bottom:4px}
+.bucket-scenario{font-size:10px;color:var(--ink3);margin-bottom:10px;font-style:italic}
+.bucket-tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.bucket-pill{padding:4px 12px;border-radius:100px;font-size:10px;font-weight:700;color:white}
+.bucket-tiebreak{font-size:10.5px;color:var(--ink2);line-height:1.6}
+.bucket-tiebreak strong{color:var(--ink)}
+
+/* TABLE */
+.cmp-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:11px;background:var(--paper)}
+thead tr{background:var(--ink)}
+thead th{padding:10px 12px;text-align:left;color:white;font-weight:700;font-size:10px;letter-spacing:.06em;white-space:nowrap}
+thead th:first-child{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.6)}
+tbody tr:nth-child(odd){background:white}
+tbody tr:nth-child(even){background:var(--paper)}
+tbody td{padding:9px 12px;vertical-align:top;border-bottom:1px solid var(--rule);color:var(--ink2);line-height:1.5}
+tbody td:first-child{font-weight:700;color:var(--ink);font-size:10.5px;white-space:nowrap}
+.hi{color:#15803d;font-weight:700}.mi{color:#d97706;font-weight:600}.lo{color:#dc2626;font-weight:600}
+
+/* CHECKLIST */
+.checklist{background:var(--paper);border:1px solid var(--rule2);border-radius:8px;overflow:hidden}
+.chk-row{display:flex;align-items:stretch;border-bottom:1px solid var(--rule)}
+.chk-row:last-child{border-bottom:none}
+.chk-row.chk-warn{background:#fef2f2}
+.chk-q{flex:1;padding:12px 18px;font-size:11px;color:var(--ink2);line-height:1.6;display:flex;align-items:center}
+.chk-num{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink3);margin-right:10px;flex-shrink:0}
+.chk-ans{width:220px;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:10px 14px;font-size:10.5px;font-weight:700;color:white;text-align:center;line-height:1.4}
+.chk-hdr{background:var(--ink);color:white;padding:11px 18px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.chk-warn-hdr{background:#7f1d1d;color:white;padding:11px 18px;font-size:10px;line-height:1.6}
+
+/* FOOTER */
+.foot{margin-top:28px;padding:14px 20px;background:var(--paper);border-left:3px solid var(--ink);font-size:11px;color:var(--ink3);line-height:1.8}
+.foot strong{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- ── HEADER ── -->
+<div class="hdr">
+  <div>
+    <h1>Automation Tool Decision Tree</h1>
+    <p>Full flow · all decisions · tool strengths · comparisons · all content from verified research (March 2026)</p>
+  </div>
+  <div class="hdr-stamp">
+    TOOLS: n8n · Workato · MS Copilot Studio · Thunk.ai · Microsoft Foundry · Power Platform · RPA<br>
+    SOURCES: Forrester 2025 · Microsoft Ignite 2025 · Thunk.ai benchmarks · n8n docs · Workato announcements<br>
+    VERSION 2.0 · MARCH 2026
+  </div>
+</div>
+
+<!-- ── LEGEND ── -->
+<div class="legend">
+  <div class="legend-title">Legend</div>
+  <div class="leg"><div class="sw-q"></div>Decision / Question node</div>
+  <div class="leg"><div class="swatch" style="background:var(--n8n)"></div>n8n</div>
+  <div class="leg"><div class="swatch" style="background:var(--workato)"></div>Workato</div>
+  <div class="leg"><div class="swatch" style="background:var(--copilot)"></div>MS Copilot Studio</div>
+  <div class="leg"><div class="swatch" style="background:var(--thunk)"></div>Thunk.ai</div>
+  <div class="leg"><div class="swatch" style="background:var(--foundry)"></div>Microsoft Foundry</div>
+  <div class="leg"><div class="swatch" style="background:var(--power)"></div>Power Platform</div>
+  <div class="leg"><div class="swatch" style="background:var(--rpa)"></div>RPA (Last Resort)</div>
+  <div class="leg"><div class="sw-multi"></div>Multiple tools apply</div>
+  <div class="leg"><div class="sw-route"></div>Re-route to another branch</div>
+</div>
+
+<!-- ══════════════════════════════
+     SECTION 1 — FULL DECISION FLOW
+══════════════════════════════ -->
+<div class="sec-head">01 — Full Decision Flow (all branches in one view)</div>
+<div class="flow">
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="680" viewBox="0 0 1600 680">
+<defs>
+  <marker id="arr"  markerWidth="8" markerHeight="7" refX="7" refY="3.5" orient="auto"><polygon points="0 0,8 3.5,0 7" fill="#b0a899"/></marker>
+  <marker id="arr-y" markerWidth="8" markerHeight="7" refX="7" refY="3.5" orient="auto"><polygon points="0 0,8 3.5,0 7" fill="#16a34a"/></marker>
+  <marker id="arr-n" markerWidth="8" markerHeight="7" refX="7" refY="3.5" orient="auto"><polygon points="0 0,8 3.5,0 7" fill="#dc2626"/></marker>
+  <filter id="sh"><feDropShadow dx="1" dy="2" stdDeviation="2" flood-opacity=".1"/></filter>
+</defs>
+
+<!-- ROOT -->
+<g transform="translate(550,10)">
+  <rect width="500" height="58" rx="6" fill="#16130e" filter="url(#sh)"/>
+  <text x="250" y="16" text-anchor="middle" font-family="JetBrains Mono" font-size="8.5" fill="#7a6f62" letter-spacing="2">START HERE</text>
+  <text x="250" y="34" text-anchor="middle" font-family="Outfit" font-size="14" font-weight="900" fill="#faf8f4">What is the primary goal of your initiative?</text>
+  <text x="250" y="50" text-anchor="middle" font-family="Outfit" font-size="9.5" fill="#b0a899">Choose the path that best matches your use case — follow your branch down</text>
+</g>
+
+<!-- root → spread line -->
+<line x1="800" y1="68" x2="800" y2="96" stroke="#b0a899" stroke-width="1.5" marker-end="url(#arr)"/>
+<line x1="148" y1="96" x2="1452" y2="96" stroke="#b0a899" stroke-width="1.5"/>
+<line x1="148"  y1="96" x2="148"  y2="114" stroke="#b0a899" stroke-width="1.5" marker-end="url(#arr)"/>
+<line x1="444"  y1="96" x2="444"  y2="114" stroke="#b0a899" stroke-width="1.5" marker-end="url(#arr)"/>
+<line x1="762"  y1="96" x2="762"  y2="114" stroke="#b0a899" stroke-width="1.5" marker-end="url(#arr)"/>
+<line x1="1068" y1="96" x2="1068" y2="114" stroke="#b0a899" stroke-width="1.5" marker-end="url(#arr)"/>
+<line x1="1360" y1="96" x2="1360" y2="114" stroke="#b0a899" stroke-width="1.5" marker-end="url(#arr)"/>
+
+<text x="148"  y="110" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#7a6f62">A · AI Assistant</text>
+<text x="444"  y="110" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#7a6f62">B · Integrate / Automate</text>
+<text x="762"  y="110" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#7a6f62">C · Legacy / UI Automation</text>
+<text x="1068" y="110" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#7a6f62">D · Low-code Apps</text>
+<text x="1360" y="110" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#7a6f62">E · Custom AI / Agentic</text>
+
+<!-- ── Q2 NODES ── -->
+<!-- A -->
+<g transform="translate(42,114)">
+  <rect width="212" height="50" rx="5" fill="#16130e" filter="url(#sh)"/>
+  <text x="106" y="14" text-anchor="middle" font-family="JetBrains Mono" font-size="7.5" fill="#7a6f62">Q2-A</text>
+  <text x="106" y="29" text-anchor="middle" font-family="Outfit" font-size="11" font-weight="700" fill="#faf8f4">Who will use</text>
+  <text x="106" y="42" text-anchor="middle" font-family="Outfit" font-size="11" font-weight="700" fill="#faf8f4">the AI assistant?</text>
+</g>
+<!-- B -->
+<g transform="translate(338,114)">
+  <rect width="212" height="50" rx="5" fill="#16130e" filter="url(#sh)"/>
+  <text x="106" y="14" text-anchor="middle" font-family="JetBrains Mono" font-size="7.5" fill="#7a6f62">Q2-B</text>
+  <text x="106" y="29" text-anchor="middle" font-family="Outfit" font-size="11" font-weight="700" fill="#faf8f4">What is your</text>
+  <text x="106" y="42" text-anchor="middle" font-family="Outfit" font-size="11" font-weight="700" fill="#faf8f4">integration context?</text>
+</g>
+<!-- C -->
+<g transform="translate(658,114)">
+  <rect width="208" height="50" rx="5" fill="#16130e" filter="url(#sh)"/>
+  <text x="104" y="14" text-anchor="middle" font-family="JetBrains Mono" font-size="7.5" fill="#7a6f62">Q2-C</text>
+  <text x="104" y="29" text-anchor="middle" font-family="Outfit" font-size="11" font-weight="700" fill="#faf8f4">Does the system</text>
+  <text x="104" y="42" text-anchor="middle" font-family="Outfit" font-size="11" font-weight="700" fill="#faf8f4">have an API?</text>
+</g>
+<!-- D -->
+<g transform="translate(960,114)">
+  <rect width="216" height="50" rx="5" fill="#16130e" filter="url(#sh)"/>
+  <text x="108" y="14" text-anchor="middle" font-family="JetBrains Mono" font-size="7.5" fill="#7a6f62">Q2-D</text>
+  <text x="108" y="29" text-anchor="middle" font-family="Outfit" font-size="11" font-weight="700" fill="#faf8f4">M365 / Dynamics</text>
+  <text x="108" y="42" text-anchor="middle" font-family="Outfit" font-size="11" font-weight="700" fill="#faf8f4">licenses in place?</text>
+</g>
+<!-- E -->
+<g transform="translate(1252,114)">
+  <rect width="216" height="50" rx="5" fill="#16130e" filter="url(#sh)"/>
+  <text x="108" y="14" text-anchor="middle" font-family="JetBrains Mono" font-size="7.5" fill="#7a6f62">Q2-E</text>
+  <text x="108" y="29" text-anchor="middle" font-family="Outfit" font-size="11" font-weight="700" fill="#faf8f4">Deployment &amp;</text>
+  <text x="108" y="42" text-anchor="middle" font-family="Outfit" font-size="11" font-weight="700" fill="#faf8f4">governance needs?</text>
+</g>
+
+<!-- ── BRANCH A SPREAD ── (bottom y=164) -->
+<line x1="148" y1="164" x2="148" y2="192" stroke="#b0a899" stroke-width="1.5"/>
+<line x1="60"  y1="192" x2="278" y2="192" stroke="#b0a899" stroke-width="1.5"/>
+<line x1="60"  y1="192" x2="60"  y2="210" stroke="#b0a899" stroke-width="1.5" marker-end="url(#arr)"/>
+<line x1="128" y1="192" x2="128" y2="210" stroke="#b0a899" stroke-width="1.5" marker-end="url(#arr)"/>
+<line x1="200" y1="192" x2="200" y2="210" stroke="#b0a899" stroke-width="1.5" marker-end="url(#arr)"/>
+<line x1="270" y1="192" x2="270" y2="210" stroke="#b0a899" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="60"  y="204" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="#7a6f62">M365 users</text>
+<text x="128" y="204" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="#7a6f62">External users</text>
+<text x="200" y="204" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="#7a6f62">Enterprise agents</text>
+<text x="270" y="204" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="#7a6f62">Devs / DS teams</text>
+
+<!-- A1: Copilot Studio -->
+<g transform="translate(20,210)"><rect width="80" height="44" rx="5" fill="#6d28d9" filter="url(#sh)"/>
+<text x="40" y="15" text-anchor="middle" font-family="Outfit" font-size="9" font-weight="800" fill="white">Copilot</text>
+<text x="40" y="26" text-anchor="middle" font-family="Outfit" font-size="9" font-weight="800" fill="white">Studio</text>
+<text x="40" y="38" text-anchor="middle" font-family="JetBrains Mono" font-size="6.5" fill="rgba(255,255,255,.75)">Agentic·M365</text></g>
+
+<!-- A2: Q3-A -->
+<g transform="translate(92,210)"><rect width="72" height="44" rx="4" fill="#16130e" filter="url(#sh)"/>
+<text x="36" y="13" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="#7a6f62">Q3-A</text>
+<text x="36" y="26" text-anchor="middle" font-family="Outfit" font-size="9" font-weight="700" fill="#faf8f4">Bot</text>
+<text x="36" y="38" text-anchor="middle" font-family="Outfit" font-size="9" font-weight="700" fill="#faf8f4">complexity?</text></g>
+
+<!-- A3: Thunk.ai -->
+<g transform="translate(162,210)"><rect width="76" height="44" rx="5" fill="#0e7490" filter="url(#sh)"/>
+<text x="38" y="16" text-anchor="middle" font-family="Outfit" font-size="9.5" font-weight="800" fill="white">Thunk.ai</text>
+<text x="38" y="28" text-anchor="middle" font-family="JetBrains Mono" font-size="6.5" fill="rgba(255,255,255,.75)">99% reliable</text>
+<text x="38" y="39" text-anchor="middle" font-family="JetBrains Mono" font-size="6.5" fill="rgba(255,255,255,.75)">No-code agents</text></g>
+
+<!-- A4: MS Foundry -->
+<g transform="translate(232,210)"><rect width="76" height="44" rx="5" fill="#0369a1" filter="url(#sh)"/>
+<text x="38" y="15" text-anchor="middle" font-family="Outfit" font-size="9" font-weight="800" fill="white">Microsoft</text>
+<text x="38" y="26" text-anchor="middle" font-family="Outfit" font-size="9" font-weight="800" fill="white">Foundry</text>
+<text x="38" y="38" text-anchor="middle" font-family="JetBrains Mono" font-size="6.5" fill="rgba(255,255,255,.75)">11K+ models</text></g>
+
+<!-- Q3-A sub-branches -->
+<line x1="128" y1="254" x2="128" y2="274" stroke="#b0a899" stroke-width="1.5"/>
+<line x1="108" y1="274" x2="150" y2="274" stroke="#b0a899" stroke-width="1.5"/>
+<line x1="108" y1="274" x2="108" y2="290" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arr-y)"/>
+<line x1="150" y1="274" x2="150" y2="290" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr-n)"/>
+<text x="100" y="285" text-anchor="end" font-family="JetBrains Mono" font-size="7" fill="#16a34a">Simple FAQ</text>
+<text x="156" y="285" font-family="JetBrains Mono" font-size="7" fill="#dc2626">Complex/RAG</text>
+
+<g transform="translate(64,290)"><rect width="88" height="38" rx="4" fill="#fffbeb" stroke="#92400e" stroke-width="1.2" filter="url(#sh)"/>
+<text x="44" y="13" text-anchor="middle" font-family="Outfit" font-size="8" font-weight="800" fill="#92400e">EITHER</text>
+<text x="44" y="24" text-anchor="middle" font-family="Outfit" font-size="8" fill="#92400e">Copilot Studio</text>
+<text x="44" y="35" text-anchor="middle" font-family="Outfit" font-size="8" fill="#92400e">or Thunk.ai</text></g>
+
+<g transform="translate(118,290)"><rect width="88" height="38" rx="4" fill="#fffbeb" stroke="#92400e" stroke-width="1.2" filter="url(#sh)"/>
+<text x="44" y="13" text-anchor="middle" font-family="Outfit" font-size="8" font-weight="800" fill="#92400e">COMBO</text>
+<text x="44" y="24" text-anchor="middle" font-family="Outfit" font-size="8" fill="#92400e">MS Foundry</text>
+<text x="44" y="35" text-anchor="middle" font-family="Outfit" font-size="8" fill="#92400e">+ Thunk.ai</text></g>
+
+<!-- ── BRANCH B SPREAD ── -->
+<line x1="444" y1="164" x2="444" y2="192" stroke="#b0a899" stroke-width="1.5"/>
+<line x1="356" y1="192" x2="546" y2="192" stroke="#b0a899" stroke-width="1.5"/>
+<line x1="356" y1="192" x2="356" y2="210" stroke="#b0a899" stroke-width="1.5" marker-end="url(#arr)"/>
+<line x1="420" y1="192" x2="420" y2="210" stroke="#b0a899" stroke-width="1.5" marker-end="url(#arr)"/>
+<line x1="486" y1="192" x2="486" y2="210" stroke="#b0a899" stroke-width="1.5" marker-end="url(#arr)"/>
+<line x1="546" y1="192" x2="546" y2="210" stroke="#b0a899" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="356" y="204" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="#7a6f62">Dev / self-host</text>
+<text x="420" y="204" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="#7a6f62">Enterprise gov</text>
+<text x="486" y="204" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="#7a6f62">MS stack</text>
+<text x="546" y="204" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="#7a6f62">Hybrid / mixed</text>
+
+<g transform="translate(316,210)"><rect width="80" height="44" rx="5" fill="#b91c1c" filter="url(#sh)"/>
+<text x="40" y="17" text-anchor="middle" font-family="Outfit" font-size="11" font-weight="900" fill="white">n8n</text>
+<text x="40" y="29" text-anchor="middle" font-family="JetBrains Mono" font-size="6.5" fill="rgba(255,255,255,.75)">Self-hosted·OSS</text>
+<text x="40" y="40" text-anchor="middle" font-family="JetBrains Mono" font-size="6.5" fill="rgba(255,255,255,.75)">Per-execution $</text></g>
+
+<g transform="translate(380,210)"><rect width="80" height="44" rx="5" fill="#1e40af" filter="url(#sh)"/>
+<text x="40" y="16" text-anchor="middle" font-family="Outfit" font-size="10" font-weight="800" fill="white">Workato</text>
+<text x="40" y="28" text-anchor="middle" font-family="JetBrains Mono" font-size="6.5" fill="rgba(255,255,255,.75)">Enterprise iPaaS</text>
+<text x="40" y="39" text-anchor="middle" font-family="JetBrains Mono" font-size="6.5" fill="rgba(255,255,255,.75)">Forrester #1 '25</text></g>
+
+<g transform="translate(446,210)"><rect width="80" height="44" rx="5" fill="#7c3aed" filter="url(#sh)"/>
+<text x="40" y="15" text-anchor="middle" font-family="Outfit" font-size="9" font-weight="800" fill="white">Power</text>
+<text x="40" y="27" text-anchor="middle" font-family="Outfit" font-size="9" font-weight="800" fill="white">Platform</text>
+<text x="40" y="39" text-anchor="middle" font-family="JetBrains Mono" font-size="6.5" fill="rgba(255,255,255,.75)">M365 native</text></g>
+
+<g transform="translate(506,210)"><rect width="80" height="44" rx="4" fill="#fffbeb" stroke="#92400e" stroke-width="1.2" filter="url(#sh)"/>
+<text x="40" y="13" text-anchor="middle" font-family="Outfit" font-size="8" font-weight="800" fill="#92400e">EITHER</text>
+<text x="40" y="24" text-anchor="middle" font-family="Outfit" font-size="8" fill="#92400e">Workato</text>
+<text x="40" y="36" text-anchor="middle" font-family="Outfit" font-size="8" fill="#92400e">or n8n</text></g>
+
+<!-- ── BRANCH C: API Y/N ── -->
+<line x1="762" y1="164" x2="762" y2="192" stroke="#b0a899" stroke-width="1.5"/>
+<line x1="720" y1="192" x2="808" y2="192" stroke="#b0a899" stroke-width="1.5"/>
+<line x1="720" y1="192" x2="720" y2="210" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arr-y)"/>
+<line x1="808" y1="192" x2="808" y2="210" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr-n)"/>
+<text x="712" y="204" text-anchor="end" font-family="JetBrains Mono" font-size="7" fill="#16a34a">YES – Has API</text>
+<text x="814" y="204" font-family="JetBrains Mono" font-size="7" fill="#dc2626">NO – No API</text>
+
+<g transform="translate(674,210)"><rect width="92" height="44" rx="4" fill="#f0fdf4" stroke="#15803d" stroke-width="1.2" filter="url(#sh)"/>
+<text x="46" y="14" text-anchor="middle" font-family="Outfit" font-size="9" font-weight="700" fill="#15803d">→ Branch B</text>
+<text x="46" y="26" text-anchor="middle" font-family="Outfit" font-size="9" font-weight="700" fill="#15803d">Integration</text>
+<text x="46" y="38" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="#15803d">use API tools</text></g>
+
+<!-- C No → Q3-C -->
+<g transform="translate(770,210)"><rect width="96" height="44" rx="4" fill="#16130e" filter="url(#sh)"/>
+<text x="48" y="13" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="#7a6f62">Q3-C</text>
+<text x="48" y="26" text-anchor="middle" font-family="Outfit" font-size="9.5" font-weight="700" fill="#faf8f4">Can system be</text>
+<text x="48" y="39" text-anchor="middle" font-family="Outfit" font-size="9.5" font-weight="700" fill="#faf8f4">modernised?</text></g>
+
+<line x1="818" y1="254" x2="818" y2="274" stroke="#b0a899" stroke-width="1.5"/>
+<line x1="794" y1="274" x2="844" y2="274" stroke="#b0a899" stroke-width="1.5"/>
+<line x1="794" y1="274" x2="794" y2="290" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arr-y)"/>
+<line x1="844" y1="274" x2="844" y2="290" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr-n)"/>
+<text x="786" y="285" text-anchor="end" font-family="JetBrains Mono" font-size="7" fill="#16a34a">Yes</text>
+<text x="850" y="285" font-family="JetBrains Mono" font-size="7" fill="#dc2626">Blocked</text>
+
+<g transform="translate(752,290)"><rect width="84" height="38" rx="4" fill="#f0fdf4" stroke="#15803d" stroke-width="1.2" filter="url(#sh)"/>
+<text x="42" y="14" text-anchor="middle" font-family="Outfit" font-size="8.5" font-weight="700" fill="#15803d">→ Modernise</text>
+<text x="42" y="25" text-anchor="middle" font-family="Outfit" font-size="8.5" font-weight="700" fill="#15803d">→ Branch B</text>
+<text x="42" y="36" text-anchor="middle" font-family="JetBrains Mono" font-size="6.5" fill="#15803d">expose API first</text></g>
+
+<g transform="translate(814,290)"><rect width="84" height="38" rx="5" fill="#64748b" filter="url(#sh)"/>
+<text x="42" y="14" text-anchor="middle" font-family="Outfit" font-size="9.5" font-weight="800" fill="white">⚠ RPA</text>
+<text x="42" y="25" text-anchor="middle" font-family="JetBrains Mono" font-size="6.5" fill="rgba(255,255,255,.8)">LAST RESORT</text>
+<text x="42" y="36" text-anchor="middle" font-family="JetBrains Mono" font-size="6.5" fill="rgba(255,255,255,.8)">UiPath / PAD</text></g>
+
+<!-- ── BRANCH D ── -->
+<line x1="1068" y1="164" x2="1068" y2="192" stroke="#b0a899" stroke-width="1.5"/>
+<line x1="990" y1="192" x2="1148" y2="192" stroke="#b0a899" stroke-width="1.5"/>
+<line x1="990"  y1="192" x2="990"  y2="210" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arr-y)"/>
+<line x1="1068" y1="192" x2="1068" y2="210" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr-n)"/>
+<line x1="1148" y1="192" x2="1148" y2="210" stroke="#b0a899" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="982"  y="204" text-anchor="end" font-family="JetBrains Mono" font-size="7" fill="#16a34a">Yes, M365/D365</text>
+<text x="1072" y="204" font-family="JetBrains Mono" font-size="7" fill="#dc2626">No MS stack</text>
+<text x="1152" y="204" font-family="JetBrains Mono" font-size="7" fill="#7a6f62">AI embedded</text>
+
+<g transform="translate(950,210)"><rect width="80" height="44" rx="5" fill="#7c3aed" filter="url(#sh)"/>
+<text x="40" y="15" text-anchor="middle" font-family="Outfit" font-size="9" font-weight="800" fill="white">Power</text>
+<text x="40" y="27" text-anchor="middle" font-family="Outfit" font-size="9" font-weight="800" fill="white">Platform</text>
+<text x="40" y="39" text-anchor="middle" font-family="JetBrains Mono" font-size="6.5" fill="rgba(255,255,255,.75)">Best TCO M365</text></g>
+
+<g transform="translate(1028,210)"><rect width="80" height="44" rx="4" fill="#fffbeb" stroke="#92400e" stroke-width="1.2" filter="url(#sh)"/>
+<text x="40" y="13" text-anchor="middle" font-family="Outfit" font-size="8" font-weight="800" fill="#92400e">EITHER</text>
+<text x="40" y="24" text-anchor="middle" font-family="Outfit" font-size="8" fill="#92400e">n8n</text>
+<text x="40" y="36" text-anchor="middle" font-family="Outfit" font-size="8" fill="#92400e">or Workato</text></g>
+
+<g transform="translate(1108,210)"><rect width="80" height="44" rx="4" fill="#fffbeb" stroke="#92400e" stroke-width="1.2" filter="url(#sh)"/>
+<text x="40" y="13" text-anchor="middle" font-family="Outfit" font-size="8" font-weight="800" fill="#92400e">COMBO</text>
+<text x="40" y="24" text-anchor="middle" font-family="Outfit" font-size="8" fill="#92400e">Power Platform</text>
+<text x="40" y="36" text-anchor="middle" font-family="Outfit" font-size="8" fill="#92400e">+ MS Foundry</text></g>
+
+<!-- ── BRANCH E ── -->
+<line x1="1360" y1="164" x2="1360" y2="192" stroke="#b0a899" stroke-width="1.5"/>
+<line x1="1282" y1="192" x2="1448" y2="192" stroke="#b0a899" stroke-width="1.5"/>
+<line x1="1282" y1="192" x2="1282" y2="210" stroke="#b0a899" stroke-width="1.5" marker-end="url(#arr)"/>
+<line x1="1362" y1="192" x2="1362" y2="210" stroke="#b0a899" stroke-width="1.5" marker-end="url(#arr)"/>
+<line x1="1448" y1="192" x2="1448" y2="210" stroke="#b0a899" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="1282" y="204" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="#7a6f62">Azure/MS cloud</text>
+<text x="1362" y="204" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="#7a6f62">Multi-cloud/OSS</text>
+<text x="1448" y="204" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="#7a6f62">No-code agents</text>
+
+<g transform="translate(1242,210)"><rect width="80" height="44" rx="5" fill="#0369a1" filter="url(#sh)"/>
+<text x="40" y="15" text-anchor="middle" font-family="Outfit" font-size="9" font-weight="800" fill="white">Microsoft</text>
+<text x="40" y="27" text-anchor="middle" font-family="Outfit" font-size="9" font-weight="800" fill="white">Foundry</text>
+<text x="40" y="39" text-anchor="middle" font-family="JetBrains Mono" font-size="6.5" fill="rgba(255,255,255,.75)">Custom LLM/RAG</text></g>
+
+<g transform="translate(1322,210)"><rect width="80" height="44" rx="4" fill="#fffbeb" stroke="#92400e" stroke-width="1.2" filter="url(#sh)"/>
+<text x="40" y="13" text-anchor="middle" font-family="Outfit" font-size="8" font-weight="800" fill="#92400e">EITHER</text>
+<text x="40" y="24" text-anchor="middle" font-family="Outfit" font-size="8" fill="#92400e">MS Foundry</text>
+<text x="40" y="36" text-anchor="middle" font-family="Outfit" font-size="8" fill="#92400e">or n8n agents</text></g>
+
+<g transform="translate(1408,210)"><rect width="80" height="44" rx="5" fill="#0e7490" filter="url(#sh)"/>
+<text x="40" y="16" text-anchor="middle" font-family="Outfit" font-size="9.5" font-weight="800" fill="white">Thunk.ai</text>
+<text x="40" y="28" text-anchor="middle" font-family="JetBrains Mono" font-size="6.5" fill="rgba(255,255,255,.75)">No-code agents</text>
+<text x="40" y="39" text-anchor="middle" font-family="JetBrains Mono" font-size="6.5" fill="rgba(255,255,255,.75)">99% reliable</text></g>
+
+<!-- ── DIVIDER ── -->
+<line x1="0" y1="370" x2="1600" y2="370" stroke="#ddd7cc" stroke-width="1" stroke-dasharray="6,4"/>
+<text x="800" y="385" text-anchor="middle" font-family="JetBrains Mono" font-size="8.5" fill="#7a6f62" letter-spacing="2">RPA GATE — ALWAYS ASK BEFORE CHOOSING RPA</text>
+
+<g transform="translate(20,396)">
+  <rect width="1560" height="72" rx="6" fill="white" stroke="#cbd5e1" stroke-width="1.2"/>
+  <text x="780" y="18" text-anchor="middle" font-family="Outfit" font-size="11" font-weight="800" fill="#c0392b">⚠  Work through these 5 checks — if any answer is YES, you likely don't need RPA</text>
+  <text x="156"  y="40" text-anchor="middle" font-family="JetBrains Mono" font-size="8.5" fill="#64748b">1. Can we expose an API?</text>
+  <text x="156"  y="54" text-anchor="middle" font-family="Outfit" font-size="9" font-weight="700" fill="#16a34a">YES → Use Branch B tools</text>
+  <text x="390"  y="40" text-anchor="middle" font-family="JetBrains Mono" font-size="8.5" fill="#64748b">2. Modernisable in 2–4 wks?</text>
+  <text x="390"  y="54" text-anchor="middle" font-family="Outfit" font-size="9" font-weight="700" fill="#16a34a">YES → Better long-term ROI</text>
+  <text x="640"  y="40" text-anchor="middle" font-family="JetBrains Mono" font-size="8.5" fill="#64748b">3. Is the UI stable?</text>
+  <text x="640"  y="54" text-anchor="middle" font-family="Outfit" font-size="9" font-weight="700" fill="#dc2626">NO → Bots will break constantly</text>
+  <text x="920"  y="40" text-anchor="middle" font-family="JetBrains Mono" font-size="8.5" fill="#64748b">4. Maintenance team in place?</text>
+  <text x="920"  y="54" text-anchor="middle" font-family="Outfit" font-size="9" font-weight="700" fill="#dc2626">NO → Becomes technical debt fast</text>
+  <text x="1200" y="40" text-anchor="middle" font-family="JetBrains Mono" font-size="8.5" fill="#64748b">5. Hybrid possible?</text>
+  <text x="1200" y="54" text-anchor="middle" font-family="Outfit" font-size="9" font-weight="700" fill="#d97706">→ n8n/Workato + RPA for locked steps</text>
+  <line x1="270" y1="24" x2="270" y2="68" stroke="#e5e0d8" stroke-width="1"/>
+  <line x1="500" y1="24" x2="500" y2="68" stroke="#e5e0d8" stroke-width="1"/>
+  <line x1="780" y1="24" x2="780" y2="68" stroke="#e5e0d8" stroke-width="1"/>
+  <line x1="1060" y1="24" x2="1060" y2="68" stroke="#e5e0d8" stroke-width="1"/>
+</g>
+
+<!-- ── TIEBREAKER ── -->
+<line x1="0" y1="488" x2="1600" y2="488" stroke="#ddd7cc" stroke-width="1" stroke-dasharray="6,4"/>
+<text x="800" y="502" text-anchor="middle" font-family="JetBrains Mono" font-size="8.5" fill="#7a6f62" letter-spacing="2">TIEBREAKER — STILL UNSURE? USE THIS</text>
+
+<g transform="translate(20,512)">
+  <rect width="1560" height="56" rx="6" fill="#16130e"/>
+  <text x="130"  y="20" text-anchor="middle" font-family="Outfit" font-size="9.5" font-weight="700" fill="#faf8f4">No M365 + Dev team</text>
+  <text x="130"  y="34" text-anchor="middle" font-family="Outfit" font-size="9.5" fill="#b0a899">→ n8n</text>
+  <text x="370"  y="20" text-anchor="middle" font-family="Outfit" font-size="9.5" font-weight="700" fill="#faf8f4">No M365 + Enterprise IT</text>
+  <text x="370"  y="34" text-anchor="middle" font-family="Outfit" font-size="9.5" fill="#b0a899">→ Workato</text>
+  <text x="640"  y="20" text-anchor="middle" font-family="Outfit" font-size="9.5" font-weight="700" fill="#faf8f4">M365 + Agents + Employee-facing</text>
+  <text x="640"  y="34" text-anchor="middle" font-family="Outfit" font-size="9.5" fill="#b0a899">→ Copilot Studio</text>
+  <text x="920"  y="20" text-anchor="middle" font-family="Outfit" font-size="9.5" font-weight="700" fill="#faf8f4">M365 + Apps + Analytics</text>
+  <text x="920"  y="34" text-anchor="middle" font-family="Outfit" font-size="9.5" fill="#b0a899">→ Power Platform</text>
+  <text x="1160" y="20" text-anchor="middle" font-family="Outfit" font-size="9.5" font-weight="700" fill="#faf8f4">No-code agents + any LLM</text>
+  <text x="1160" y="34" text-anchor="middle" font-family="Outfit" font-size="9.5" fill="#b0a899">→ Thunk.ai</text>
+  <text x="1420" y="20" text-anchor="middle" font-family="Outfit" font-size="9.5" font-weight="700" fill="#faf8f4">Custom models / RAG / LLMOps</text>
+  <text x="1420" y="34" text-anchor="middle" font-family="Outfit" font-size="9.5" fill="#b0a899">→ Microsoft Foundry</text>
+  <text x="780" y="50" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="rgba(255,255,255,.3)">RPA is always last — only when no API exists AND modernisation is permanently blocked</text>
+  <line x1="256" y1="8" x2="256" y2="48" stroke="rgba(255,255,255,.08)" stroke-width="1"/>
+  <line x1="486" y1="8" x2="486" y2="48" stroke="rgba(255,255,255,.08)" stroke-width="1"/>
+  <line x1="786" y1="8" x2="786" y2="48" stroke="rgba(255,255,255,.08)" stroke-width="1"/>
+  <line x1="1056" y1="8" x2="1056" y2="48" stroke="rgba(255,255,255,.08)" stroke-width="1"/>
+  <line x1="1280" y1="8" x2="1280" y2="48" stroke="rgba(255,255,255,.08)" stroke-width="1"/>
+</g>
+</svg>
+</div>
+
+<!-- ══════════════════════════════
+     SECTION 2 — TOOL DEEP-DIVES
+══════════════════════════════ -->
+<div class="sec-head">02 — Tool Deep-Dives &nbsp;·&nbsp; All content from verified research: Forrester 2025 · Microsoft Ignite 2025 · Thunk.ai published benchmarks · n8n docs · Workato announcements</div>
+<div class="cards-grid">
+
+  <!-- n8n -->
+  <div class="tcard">
+    <div class="tcard-head" style="background:var(--n8n)">
+      <div class="tcard-name">⚡ n8n</div>
+      <div class="tcard-tag">Self-hosted workflow automation · Fair-code open source</div>
+    </div>
+    <div class="tcard-body">
+      <div class="tcard-label">What it is</div>
+      <div class="tcard-why">n8n uniquely combines AI capabilities with business process automation — giving technical teams the flexibility of code with the speed of no-code. Open-source (fair-code licensed), self-hostable, and AI-native with LangChain-powered agent nodes.</div>
+      <div class="tcard-label">Verified strengths</div>
+      <ul class="tcard-strengths">
+        <li>Self-hostable with full data sovereignty — air-gapped deployments possible</li>
+        <li>Code nodes: write JavaScript or Python at any step, add npm packages</li>
+        <li>400+ native connectors + HTTP Request node for any REST/GraphQL API</li>
+        <li>AI-native: LangChain integration, RAG via vector DBs, LLM agent workflows</li>
+        <li>MCP support: n8n workflows are callable by Claude, Lovable &amp; other AI clients</li>
+        <li>900+ community templates; Git-based version control for workflow lifecycle</li>
+        <li>Per-execution pricing model — far cheaper than per-task iPaaS at high volume</li>
+        <li>Enterprise: SSO, RBAC, secrets manager (AWS, Azure Key Vault, GCP), air-gap deploy</li>
+      </ul>
+      <div class="tcard-note" style="border-color:var(--n8n)">💡 Best when engineers own automation, data must stay on-prem, or you need deep AI agent pipelines at low cost. Requires DevOps capability to self-host and maintain.</div>
+      <div class="tcard-vs">Not suited for non-technical business users. If the org grows to need enterprise audit trails, IT governance, and citizen-developer access, consider graduating to Workato.</div>
+    </div>
+  </div>
+
+  <!-- Workato -->
+  <div class="tcard">
+    <div class="tcard-head" style="background:var(--workato)">
+      <div class="tcard-name">🔄 Workato</div>
+      <div class="tcard-tag">Enterprise iPaaS + Agentic Orchestration · Forrester Leader Q3 2025</div>
+    </div>
+    <div class="tcard-body">
+      <div class="tcard-label">What it is</div>
+      <div class="tcard-why">Workato is the #1 enterprise iPaaS (Forrester Leader, Q3 2025 — highest scores for Vision, Innovation &amp; Roadmap). It orchestrates workflows, data, and AI agents — and now powers Enterprise MCP for agentic AI across 1,400+ business app connections.</div>
+      <div class="tcard-label">Verified strengths</div>
+      <ul class="tcard-strengths">
+        <li>Forrester &amp; Gartner recognised Leader in iPaaS 2025</li>
+        <li>1,400+ pre-built connectors including SAP, Salesforce, Workday, ServiceNow</li>
+        <li>Enterprise MCP servers: connects AI agents to business apps securely at scale</li>
+        <li>Workato Genies: pre-built enterprise AI agents for IT, HR, Finance &amp; CX</li>
+        <li>Workato GO: unified search, automation &amp; AI super-app for employees</li>
+        <li>Enterprise governance: SOC 2, ISO 27001, PCI, BYOK, role-based access control</li>
+        <li>99.9% uptime SLA, auto-scaling, zero-downtime upgrades</li>
+        <li>Low-code recipe builder — accessible to IT and business users alike</li>
+      </ul>
+      <div class="tcard-note" style="border-color:var(--workato)">💡 Best for large enterprises requiring IT-governed, auditable, high-volume integration with AI agent orchestration. Workato has significantly expanded beyond iPaaS into agentic orchestration.</div>
+      <div class="tcard-vs">For developer-owned, cost-sensitive automation with full self-hosting, n8n is the alternative. Workato wins when you need multi-cloud, multi-team, compliance-heavy integration WITH emerging agentic AI orchestration.</div>
+    </div>
+  </div>
+
+  <!-- Copilot Studio -->
+  <div class="tcard">
+    <div class="tcard-head" style="background:var(--copilot)">
+      <div class="tcard-name">🤝 MS Copilot Studio</div>
+      <div class="tcard-tag">Agentic M365 Platform · Updated at Microsoft Ignite 2025</div>
+    </div>
+    <div class="tcard-body">
+      <div class="tcard-label">What it is</div>
+      <div class="tcard-why">Copilot Studio is Microsoft's fully managed SaaS agent platform — the foundation for agentic business transformation in the Microsoft ecosystem. It now supports autonomous agents, deep reasoning, computer-use automation, MCP integration, and multi-agent orchestration across 1,400+ systems.</div>
+      <div class="tcard-label">Verified strengths</div>
+      <ul class="tcard-strengths">
+        <li>Build autonomous agents that react to events and execute tasks independently</li>
+        <li>Deep reasoning agents for complex analysis (demand forecasting, RFP, lead scoring)</li>
+        <li>Computer-use capability: agents operate apps/websites via virtual mouse &amp; keyboard</li>
+        <li>Connects to 1,400+ systems via MCP, Power Platform connectors &amp; Microsoft Graph</li>
+        <li>Generative orchestration: no need to define every conversation flow manually</li>
+        <li>GPT-5 / GPT-5.2 model choice + Anthropic &amp; third-party models available</li>
+        <li>Microsoft Entra Agent ID: every agent gets a governed identity for fleet management</li>
+        <li>WhatsApp, Teams, SharePoint, web channels — including native external deployment</li>
+        <li>Microsoft Defender integration for real-time agent threat protection</li>
+      </ul>
+      <div class="tcard-note" style="border-color:var(--copilot)">💡 As of late 2025, it has evolved far beyond a chatbot builder into a full agentic automation platform. Best for Microsoft-committed orgs wanting a governed, no-code agent platform.</div>
+      <div class="tcard-vs">For custom model fine-tuning, RAG pipelines, or multi-cloud AI workloads, use Microsoft Foundry as the backend. Copilot Studio = front-end agent layer; Foundry = model and infrastructure layer.</div>
+    </div>
+  </div>
+
+  <!-- Thunk.ai -->
+  <div class="tcard">
+    <div class="tcard-head" style="background:var(--thunk)">
+      <div class="tcard-name">🤖 Thunk.ai</div>
+      <div class="tcard-tag">Reliable No-code Agentic Platform · 99% accuracy · 94% full autonomy</div>
+    </div>
+    <div class="tcard-body">
+      <div class="tcard-label">What it is</div>
+      <div class="tcard-why">Thunk.ai is a self-service AI agent platform purpose-built for reliable enterprise workflow automation. Its flagship no-code agentic platform combines rapid development with industry-leading execution reliability — achieving 99% accuracy with 94% full autonomy on complex ITSM workflows.</div>
+      <div class="tcard-label">Verified strengths (from Thunk.ai benchmarks)</div>
+      <ul class="tcard-strengths">
+        <li>99% AI reliability benchmark on enterprise ITSM workflows</li>
+        <li>94% full autonomy rate — only 6% escalation to humans</li>
+        <li>No-code design: workflows built entirely in natural language</li>
+        <li>Human-in-the-loop controls with granular autonomy settings</li>
+        <li>Supports OpenAI, Google, and Anthropic LLMs (bring your own key)</li>
+        <li>Modular sub-agents, MCP servers, and agentic app benchmarking</li>
+        <li>Connects to Google Drive, SharePoint, databases &amp; business apps</li>
+        <li>Versioned thunks for deployment stability &amp; consistency</li>
+        <li>Private cloud / single-tenant deployment for enterprise data control</li>
+      </ul>
+      <div class="tcard-note" style="border-color:var(--thunk)">💡 Best when you need provably reliable AI agents running complex, multi-step business workflows — not just chatbots. Ideal for ITSM, document processing, HR, and operations teams.</div>
+      <div class="tcard-vs">Thunk.ai focuses on reliable agentic execution, not model training. For custom fine-tuned models or RAG at scale, pair with Microsoft Foundry as the model backend.</div>
+    </div>
+  </div>
+
+  <!-- Microsoft Foundry -->
+  <div class="tcard">
+    <div class="tcard-head" style="background:var(--foundry)">
+      <div class="tcard-name">⚗️ Microsoft Foundry</div>
+      <div class="tcard-tag">Enterprise AI Platform · Rebranded from Azure AI Foundry at Ignite 2025</div>
+    </div>
+    <div class="tcard-body">
+      <div class="tcard-label">What it is</div>
+      <div class="tcard-why">Rebranded from Azure AI Foundry at Ignite 2025, Microsoft Foundry is the unified enterprise AI platform for building, deploying, and governing AI agents and models at scale. It's the only cloud with both OpenAI GPT and Anthropic Claude models side-by-side, used by 80% of Fortune 500 companies.</div>
+      <div class="tcard-label">Verified strengths</div>
+      <ul class="tcard-strengths">
+        <li>11,000+ models including GPT-5.2, Claude (Haiku/Sonnet/Opus), Mistral, DeepSeek, Llama</li>
+        <li>Only cloud platform with both OpenAI GPT series AND Anthropic Claude models</li>
+        <li>Foundry Agent Service: hosted multi-agent orchestration, persistent memory, MCP support</li>
+        <li>Foundry IQ: RAG engine powered by Azure AI Search — grounded in SharePoint, ADLS, web</li>
+        <li>Fine-tuning, eval frameworks, synthetic data generation, and model safety leaderboards</li>
+        <li>1,000+ prebuilt tool connectors (SAP, UiPath, GitHub, Hugging Face, Azure SQL) via MCP</li>
+        <li>Foundry Control Plane: enterprise observability, RBAC, Azure Policy, Entra ID governance</li>
+        <li>GPT-5.1 Codex Max (GA): autonomous multi-agent coding pipelines with 400K context</li>
+        <li>Free to explore; costs at deployment/model usage level only</li>
+      </ul>
+      <div class="tcard-note" style="border-color:var(--foundry)">💡 Best for developer/data science teams building production-grade AI apps, agentic pipelines, or custom models. Not a no-code tool — requires Azure subscription and dev skills.</div>
+      <div class="tcard-vs">Foundry is the model/infrastructure layer. Copilot Studio and Thunk.ai are no-code execution layers on top. Pair accordingly based on who builds and who uses.</div>
+    </div>
+  </div>
+
+  <!-- Power Platform -->
+  <div class="tcard">
+    <div class="tcard-head" style="background:var(--power)">
+      <div class="tcard-name">💜 Power Platform</div>
+      <div class="tcard-tag">AI-First Low-Code Platform · Reimagined at Microsoft Ignite 2025</div>
+    </div>
+    <div class="tcard-body">
+      <div class="tcard-label">What it is</div>
+      <div class="tcard-why">Power Platform (Power Automate, Power Apps, Copilot Studio, Power BI, AI Builder) has been fully reimagined for 2025 as an AI-first, agent-driven platform. Power Apps now lets you describe a business problem and a team of agents builds the full-stack app — while Power Automate delivers self-healing, AI-driven automations.</div>
+      <div class="tcard-label">Verified strengths</div>
+      <ul class="tcard-strengths">
+        <li>Power Apps 'vibe coding': describe your app in natural language, agents build it end-to-end</li>
+        <li>Power Automate: AI-first with generative actions, self-healing automations &amp; ROI analytics</li>
+        <li>AI Recorder (Record with Copilot): converts screen + voice into desktop automation flows</li>
+        <li>Power Apps MCP Server: agents can invoke app capabilities like form-fill &amp; data exploration</li>
+        <li>1,400+ connectors including Teams, SharePoint, Dynamics 365, SAP, Salesforce</li>
+        <li>AI Builder: intelligent document processing, OCR, prediction models — no ML expertise needed</li>
+        <li>Included in most M365/D365 license bundles — strong cost advantage for Microsoft shops</li>
+        <li>Unified governance hub for agents, apps &amp; workflows via Power Platform Admin Center</li>
+      </ul>
+      <div class="tcard-note" style="border-color:var(--power)">💡 As of late 2025, Power Platform is no longer just a low-code tool — it's an AI-agent platform. Best for M365-committed orgs collaborating on intelligent apps and automations.</div>
+      <div class="tcard-vs">Premium connector licensing costs can add up at scale — audit before committing. For complex multi-cloud integrations outside Microsoft, Workato or n8n handle non-Microsoft endpoints more natively.</div>
+    </div>
+  </div>
+
+  <!-- RPA -->
+  <div class="tcard">
+    <div class="tcard-head" style="background:var(--rpa)">
+      <div class="tcard-name">⚠ RPA — Last Resort</div>
+      <div class="tcard-tag">Only when: no API · system frozen · modernisation blocked</div>
+    </div>
+    <div class="tcard-body">
+      <div class="tcard-label">Only use when</div>
+      <div class="tcard-why">RPA should only be used when no API exists and the system cannot be modernised. It automates by mimicking user interactions on screen — powerful for legacy but brittle and expensive to maintain long-term.</div>
+      <div class="tcard-label">Tools to evaluate</div>
+      <ul class="tcard-strengths">
+        <li>Works on any system with a UI (ERP, mainframe, legacy thick clients, SAP screens)</li>
+        <li>No code changes needed to the target system whatsoever</li>
+        <li>Can handle structured document extraction (with AI OCR assistance)</li>
+        <li>Attended and unattended bot modes</li>
+        <li><strong>UiPath</strong> — most mature, full enterprise RPA platform</li>
+        <li><strong>Power Automate Desktop (PAD)</strong> — free with Windows 11 / M365 licensing</li>
+        <li><strong>Automation Anywhere 360</strong> — strong for cloud-first RPA</li>
+      </ul>
+      <div class="tcard-rpa-warn">⚠ RPA is brittle — any UI change can break automations. Always have a dedicated maintenance plan and a maintenance team. Prefer a hybrid approach: use n8n or Workato to orchestrate the end-to-end flow, with RPA only for the specific locked legacy steps.</div>
+      <div class="tcard-vs">If the legacy process could be partially modernised, Thunk.ai's agentic automation or n8n can handle the API-accessible portions, reducing the RPA footprint significantly.</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════
+     SECTION 3 — MULTI-TOOL BUCKETS
+══════════════════════════════ -->
+<div class="sec-head">03 — When Multiple Tools Apply (buckets with tiebreakers)</div>
+<div class="buckets-grid">
+
+  <div class="bucket">
+    <div class="bucket-title">Simple external bot or FAQ assistant</div>
+    <div class="bucket-scenario">External users · structured flows · low autonomy required</div>
+    <div class="bucket-tools">
+      <span class="bucket-pill" style="background:var(--copilot)">MS Copilot Studio</span>
+      <span class="bucket-pill" style="background:var(--thunk)">Thunk.ai</span>
+    </div>
+    <div class="bucket-tiebreak"><strong>Tiebreaker:</strong> Does the user need <em>answers</em>? → Copilot Studio (no-code flow builder, M365-native, Teams/WhatsApp channels). Does the system need to <em>take autonomous multi-step actions</em>? → Thunk.ai (99% reliable agentic execution, BYOLLM, 6% escalation rate).</div>
+  </div>
+
+  <div class="bucket">
+    <div class="bucket-title">Complex agentic workflows + custom AI models</div>
+    <div class="bucket-scenario">Reasoning-heavy · RAG · multi-step execution · enterprise governance</div>
+    <div class="bucket-tools">
+      <span class="bucket-pill" style="background:var(--foundry)">Microsoft Foundry</span>
+      <span class="bucket-pill" style="background:var(--thunk)">Thunk.ai</span>
+    </div>
+    <div class="bucket-tiebreak"><strong>How they combine:</strong> These are complementary — not alternatives. Microsoft Foundry manages the model layer (11K+ models, RAG via Foundry IQ, fine-tuning, eval). Thunk.ai manages reliable agentic execution on top, using Azure OpenAI as its BYOLLM backend via API key.</div>
+  </div>
+
+  <div class="bucket">
+    <div class="bucket-title">Integration in hybrid / mixed-cloud environment</div>
+    <div class="bucket-scenario">High-volume · on-prem + cloud · multiple endpoints · compliance needs</div>
+    <div class="bucket-tools">
+      <span class="bucket-pill" style="background:var(--workato)">Workato</span>
+      <span class="bucket-pill" style="background:var(--n8n)">n8n</span>
+    </div>
+    <div class="bucket-tiebreak"><strong>Tiebreaker:</strong> IT-governed enterprise with SOC2/PCI compliance + AI agent orchestration needs → Workato (Forrester Leader 2025, Enterprise MCP, Genies, 99.9% SLA). Developer-owned, cost-sensitive, data-sovereign → n8n (air-gapped, per-execution pricing, MCP-callable by Claude).</div>
+  </div>
+
+  <div class="bucket">
+    <div class="bucket-title">Low-code apps without the Microsoft stack</div>
+    <div class="bucket-scenario">No M365 licenses · internal tools · neutral platform preferred</div>
+    <div class="bucket-tools">
+      <span class="bucket-pill" style="background:var(--n8n)">n8n</span>
+      <span class="bucket-pill" style="background:var(--workato)">Workato</span>
+    </div>
+    <div class="bucket-tiebreak"><strong>Note:</strong> Neither is a full low-code app platform. n8n as automation backbone + lightweight frontend (Retool/Budibase) for dev teams. Workato's Workbot + approval workflows as lightweight app surfaces for governed enterprise settings. Consider also evaluating Retool or Budibase as a true frontend layer.</div>
+  </div>
+
+  <div class="bucket">
+    <div class="bucket-title">Low-code apps with embedded AI (M365 shop)</div>
+    <div class="bucket-scenario">M365-committed · apps needing doc AI, summarisation, custom models</div>
+    <div class="bucket-tools">
+      <span class="bucket-pill" style="background:var(--power)">Power Platform</span>
+      <span class="bucket-pill" style="background:var(--foundry)">Microsoft Foundry</span>
+    </div>
+    <div class="bucket-tiebreak"><strong>How they combine:</strong> Power Platform handles 80% of cases — vibe-coded apps, AI Builder (OCR, doc processing, prediction), AI Recorder (screen+voice → flow), Power Apps MCP Server. Add Microsoft Foundry when AI logic exceeds AI Builder's capability: custom LLM endpoints called via HTTP from Power Apps/Automate.</div>
+  </div>
+
+  <div class="bucket">
+    <div class="bucket-title">Custom AI / Agentic on multi-cloud or OSS stack</div>
+    <div class="bucket-scenario">Not Azure-committed · open LLMs · dev-led · lightweight agentic</div>
+    <div class="bucket-tools">
+      <span class="bucket-pill" style="background:var(--foundry)">Microsoft Foundry</span>
+      <span class="bucket-pill" style="background:var(--n8n)">n8n AI Agents</span>
+    </div>
+    <div class="bucket-tiebreak"><strong>Tiebreaker:</strong> Microsoft Foundry for governed MLOps platform with 11K+ models, fine-tuning, eval, Foundry IQ RAG, and production deployment. n8n AI agent nodes (LangChain + OpenAI/Anthropic/Ollama) for fast, lightweight agentic automation workflows — self-hosted with open-source models, no full MLOps platform needed.</div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════
+     SECTION 4 — COMPARISON TABLE
+══════════════════════════════ -->
+<div class="sec-head">04 — Side-by-Side Comparison</div>
+<div class="cmp-wrap">
+<table>
+  <thead>
+    <tr>
+      <th>Dimension</th>
+      <th>⚡ n8n</th>
+      <th>🔄 Workato</th>
+      <th>🤝 Copilot Studio</th>
+      <th>🤖 Thunk.ai</th>
+      <th>⚗️ MS Foundry</th>
+      <th>💜 Power Platform</th>
+      <th>⚠ RPA</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Primary persona</td>
+      <td>Developers / Engineers</td>
+      <td>Enterprise IT &amp; Business teams</td>
+      <td>M365 admins &amp; no-code builders</td>
+      <td>Ops, IT, HR, business teams</td>
+      <td>Dev &amp; Data science teams</td>
+      <td>Citizen devs &amp; M365 users</td>
+      <td>IT / RPA CoE</td>
+    </tr>
+    <tr>
+      <td>Technical skill needed</td>
+      <td><span class="lo">High — DevOps to self-host</span></td>
+      <td><span class="mi">Medium — low-code recipes</span></td>
+      <td><span class="hi">Low — no-code agent builder</span></td>
+      <td><span class="hi">Low — natural language only</span></td>
+      <td><span class="lo">High — Azure + dev skills</span></td>
+      <td><span class="hi">Low — vibe coding (describe → build)</span></td>
+      <td><span class="mi">Medium — process design + maintenance</span></td>
+    </tr>
+    <tr>
+      <td>AI / Agentic native</td>
+      <td>LangChain agent nodes; MCP-callable by Claude &amp; other AI clients</td>
+      <td>Workato Genies (pre-built agents for IT/HR/Finance); Enterprise MCP servers</td>
+      <td class="hi">Fully autonomous agents; deep reasoning; computer-use; GPT-5.2 + Claude models; Entra Agent ID</td>
+      <td class="hi">Core product — 99% reliable; 94% full autonomy; 6% escalation; BYOLLM (OpenAI/Claude/Google)</td>
+      <td class="hi">Foundry Agent Service; 11K+ models; only cloud with GPT + Claude; Foundry IQ RAG; Codex Max</td>
+      <td>Copilot in every product; AI Builder; Power Apps MCP Server; AI Recorder (screen+voice → flow)</td>
+      <td class="lo">None — UI screen mimicry only</td>
+    </tr>
+    <tr>
+      <td>Microsoft ecosystem fit</td>
+      <td>Via connectors (not native)</td>
+      <td>Good — 1,400+ connectors incl. M365</td>
+      <td class="hi">Native — Teams, SharePoint, Outlook, Entra, Defender</td>
+      <td>Via API / BYOLLM with Azure OpenAI</td>
+      <td class="hi">Native Azure — Entra, ADLS, SharePoint, Graph, VNET</td>
+      <td class="hi">Core — M365 / D365 / Azure native; included in bundles</td>
+      <td>PAD free with M365; others vendor-neutral</td>
+    </tr>
+    <tr>
+      <td>Deployment</td>
+      <td>Self-host / Cloud / Air-gapped</td>
+      <td>Cloud SaaS / On-prem agent</td>
+      <td>Microsoft Cloud (SaaS)</td>
+      <td>Cloud SaaS / Private cloud / Single-tenant</td>
+      <td>Azure cloud / VNET / Sovereign cloud</td>
+      <td>Microsoft Cloud (SaaS)</td>
+      <td>On-prem / Cloud / Hybrid</td>
+    </tr>
+    <tr>
+      <td>Cost model</td>
+      <td>Per-execution — cheapest at high volume</td>
+      <td>Per workspace/task — premium enterprise pricing</td>
+      <td>M365 bundle + per-message for external users</td>
+      <td>BYOLLM — you pay your own LLM API costs</td>
+      <td>Azure consumption-based — free to explore</td>
+      <td>M365 bundle + premium connector costs (watch out at scale)</td>
+      <td>Per bot license + per run — maintenance cost high</td>
+    </tr>
+    <tr>
+      <td>Governance / compliance</td>
+      <td>SSO, RBAC, secrets manager (AWS/Azure/GCP KV); self-host = you own it</td>
+      <td class="hi">SOC 2, ISO 27001, PCI, BYOK, 99.9% SLA, role-based access control</td>
+      <td class="hi">Entra Agent ID, Defender integration, Microsoft admin centre, fleet management</td>
+      <td>Private cloud, single-tenant deployment, versioned thunks for stability</td>
+      <td class="hi">RBAC, Azure Policy, Entra ID, Foundry Control Plane, sovereign cloud options</td>
+      <td class="hi">Power Platform Admin Center, DLP policies, CoE Toolkit, unified governance hub</td>
+      <td>Vendor-dependent (UiPath has strong governance tooling)</td>
+    </tr>
+    <tr>
+      <td>Key differentiator (researched)</td>
+      <td>MCP-callable workflows; code + AI in same node; per-execution pricing kills iPaaS cost</td>
+      <td>Workato GO super-app; Genies AI agents; Forrester #1 for Vision &amp; Innovation 2025; Enterprise MCP</td>
+      <td>Computer-use agents; Entra Agent ID fleet mgmt; WhatsApp + Teams + web channels; autonomous event-driven agents</td>
+      <td>99% accuracy + 94% full autonomy benchmark — most reliable agentic platform; 6% escalation rate; BYOLLM</td>
+      <td>Only cloud with BOTH GPT-5.2 AND Anthropic Claude; Foundry IQ RAG; Codex Max 400K context autonomous coding</td>
+      <td>Vibe coding (describe → agents build full-stack app); AI Recorder (screen+voice → desktop flow)</td>
+      <td>Works on any UI with zero system changes — the only option for permanently locked legacy systems</td>
+    </tr>
+    <tr>
+      <td>When NOT to use</td>
+      <td>Non-technical users; enterprise audit trails; citizen dev access needed</td>
+      <td>Small/dev teams; budget-sensitive projects; single-developer automation</td>
+      <td>Non-Microsoft orgs; custom model training needs; multi-cloud AI strategy</td>
+      <td>When you need model training, fine-tuning, or RAG infrastructure</td>
+      <td>When you lack dev resources or need no-code simplicity without Azure</td>
+      <td>Complex non-MS integrations; strict data sovereignty requirements outside Azure</td>
+      <td class="lo">Whenever an API exists — always prefer integration or agentic tools</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<!-- ══════════════════════════════
+     SECTION 5 — CHECKLIST
+══════════════════════════════ -->
+<div class="sec-head">05 — Quick Selection Checklist</div>
+<div class="checklist">
+  <div class="chk-hdr">If your answer is YES → the recommendation on the right is your primary starting point</div>
+  <div class="chk-row">
+    <div class="chk-q"><span class="chk-num">01</span>Do you live in Microsoft Teams / SharePoint / Outlook and need autonomous AI agents (event-driven, computer-use capable, Entra-governed) without a custom build?</div>
+    <div class="chk-ans" style="background:var(--copilot)">→ MS Copilot Studio</div>
+  </div>
+  <div class="chk-row">
+    <div class="chk-q"><span class="chk-num">02</span>Do you need self-hostable, developer-owned automation with full data sovereignty, custom JS/Python code at every step, and workflows callable by Claude via MCP?</div>
+    <div class="chk-ans" style="background:var(--n8n)">→ n8n</div>
+  </div>
+  <div class="chk-row">
+    <div class="chk-q"><span class="chk-num">03</span>Do you need enterprise-governed, auditable, multi-team integration (SOC2/PCI/BYOK) at scale with AI agent orchestration — and Forrester-recognised reliability and SLA?</div>
+    <div class="chk-ans" style="background:var(--workato)">→ Workato</div>
+  </div>
+  <div class="chk-row">
+    <div class="chk-q"><span class="chk-num">04</span>Do you need reliable agentic workflows (99% accurate, 94% fully autonomous, 6% escalation rate) built in natural language with no-code, using any LLM provider?</div>
+    <div class="chk-ans" style="background:var(--thunk)">→ Thunk.ai</div>
+  </div>
+  <div class="chk-row">
+    <div class="chk-q"><span class="chk-num">05</span>Do you need to build or fine-tune custom AI models, run RAG pipelines (Foundry IQ), deploy multi-agent systems with 11K+ models including both GPT-5.2 and Anthropic Claude?</div>
+    <div class="chk-ans" style="background:var(--foundry)">→ Microsoft Foundry</div>
+  </div>
+  <div class="chk-row">
+    <div class="chk-q"><span class="chk-num">06</span>Do you already have M365/D365 licenses and need AI-first low-code apps (vibe coding), self-healing automations, AI Recorder, and analytics — all in one agent-driven suite?</div>
+    <div class="chk-ans" style="background:var(--power)">→ Power Platform</div>
+  </div>
+  <div class="chk-row chk-warn">
+    <div class="chk-q"><span class="chk-num">07</span>Is the target system permanently frozen (no API, no modernisation path), the UI is stable, you have a dedicated RPA maintenance team, and no hybrid approach is viable?</div>
+    <div class="chk-ans" style="background:var(--rpa)">→ RPA (last resort only)</div>
+  </div>
+  <div class="chk-warn-hdr">⚠ Before choosing RPA — work through the gate: (1) Can we expose an API? (2) Can the system be modernised in 2–4 weeks? (3) Is the UI stable? (4) Do we have a maintenance team? (5) Can we use a hybrid approach (n8n/Workato orchestrates, RPA handles only the locked steps)? If any answer is YES, you likely don't need RPA at all.</div>
+</div>
+
+<div class="foot">
+  <strong>Sources &amp; accuracy note:</strong> All tool descriptions and strengths are drawn directly from verified research conducted March 2026 and reflected in the interactive decision tree. Sources include: Forrester Wave iPaaS Q3 2025 (Workato leadership position) · Microsoft Ignite 2025 announcements (Copilot Studio autonomous agents + computer-use, Microsoft Foundry rebrand from Azure AI Foundry, Power Platform vibe coding + AI Recorder + MCP Server) · Thunk.ai published reliability benchmarks (99% accuracy, 94% full autonomy, 6% human escalation rate) · n8n official documentation (MCP support, LangChain agent nodes, enterprise feature set, per-execution pricing) · Workato product announcements (Enterprise MCP servers, Workato Genies, Workato GO super-app).
+  <br><br><strong>RPA note:</strong> Always treat RPA as a last resort. Where a system has or can be given an API, use integration or agentic tools instead — they are more maintainable, cheaper to operate long-term, and significantly easier to evolve as business needs change.
+</div>
+
+</div>
+</body>
+</html>
