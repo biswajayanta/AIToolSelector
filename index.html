@@ -1,0 +1,1627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GSK Enterprise AI Platforms — Decision Tree</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  /* ===== DESIGN TOKENS ===== */
+  :root {
+    --bg: #0a0c10;
+    --surface: #12151c;
+    --surface2: #1a1e28;
+    --border: #252a38;
+    --border-light: #2e3448;
+    --text: #e8ecf4;
+    --text-muted: #7a8299;
+    --text-dim: #4a5168;
+    --accent: #5b7fff;
+    --accent2: #a78bfa;
+    --accent3: #34d399;
+    --accent4: #fb923c;
+    --accent5: #f472b6;
+
+    --n8n: #ea4b3e;
+    --gigi: #0d9488;
+    --copilot: #7c3aed;
+    --thinkai: #0891b2;
+    --azure: #0ea5e9;
+    --power: #8b5cf6;
+    --rpa: #64748b;
+
+    --radius: 12px;
+    --radius-lg: 18px;
+    --transition: 0.22s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ===== BACKGROUND ===== */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 10% 0%, rgba(91,127,255,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 50% at 90% 100%, rgba(167,139,250,0.06) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ===== LAYOUT ===== */
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 24px 80px; position: relative; z-index: 1; }
+
+  /* ===== HEADER ===== */
+  header {
+    padding: 52px 0 40px;
+    text-align: center;
+  }
+  .header-tag {
+    display: inline-block;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: rgba(91,127,255,0.1);
+    border: 1px solid rgba(91,127,255,0.25);
+    padding: 5px 14px;
+    border-radius: 100px;
+    margin-bottom: 20px;
+  }
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(28px, 5vw, 52px);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    margin-bottom: 14px;
+    background: linear-gradient(135deg, #e8ecf4 20%, #7a8299 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .subtitle {
+    font-size: 13px;
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+    max-width: 540px;
+    margin: 0 auto 32px;
+    line-height: 1.7;
+  }
+
+  /* ===== LEGEND ===== */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 44px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--text-muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 6px 12px;
+    border-radius: 100px;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  .legend-item:hover { border-color: var(--border-light); color: var(--text); }
+  .legend-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* ===== RESET / NAV ===== */
+  .controls {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 36px;
+  }
+  .btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    padding: 9px 20px;
+    border-radius: 8px;
+    border: 1px solid var(--border-light);
+    background: var(--surface);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  .btn:hover { background: var(--surface2); color: var(--text); border-color: var(--accent); }
+  .btn.primary {
+    background: rgba(91,127,255,0.15);
+    border-color: rgba(91,127,255,0.4);
+    color: var(--accent);
+  }
+  .btn.primary:hover { background: rgba(91,127,255,0.25); }
+
+  /* ===== BREADCRUMB ===== */
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-bottom: 28px;
+    min-height: 24px;
+  }
+  .breadcrumb-item { color: var(--text-muted); cursor: pointer; transition: var(--transition); }
+  .breadcrumb-item:hover { color: var(--accent); }
+  .breadcrumb-sep { color: var(--text-dim); }
+  .breadcrumb-current { color: var(--text); }
+
+  /* ===== NODE / QUESTION CARD ===== */
+  .question-card {
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    padding: 32px 36px;
+    margin-bottom: 24px;
+    position: relative;
+    animation: fadeSlide 0.3s ease forwards;
+  }
+  @keyframes fadeSlide {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .question-number {
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+  .question-text {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(16px, 2.5vw, 22px);
+    font-weight: 700;
+    line-height: 1.35;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+  .question-hint {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 28px;
+    line-height: 1.6;
+  }
+
+  /* ===== OPTIONS GRID ===== */
+  .options-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+  }
+  .option-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    text-align: left;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .option-btn:hover {
+    border-color: var(--accent);
+    background: rgba(91,127,255,0.07);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  }
+  .option-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .option-label { font-weight: 500; color: var(--text); display: block; margin-bottom: 4px; font-size: 13px; }
+  .option-desc { color: var(--text-muted); font-size: 11px; }
+
+  /* ===== RESULT CARD ===== */
+  .result-section {
+    animation: fadeSlide 0.35s ease forwards;
+  }
+  .result-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .result-badge {
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 5px 14px;
+    border-radius: 100px;
+  }
+  .result-title {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(18px, 3vw, 26px);
+    font-weight: 800;
+    line-height: 1.25;
+    margin-bottom: 6px;
+  }
+
+  .tool-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .tool-card {
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    border: 1px solid;
+    position: relative;
+    overflow: hidden;
+    transition: var(--transition);
+  }
+  .tool-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.04;
+    background: currentColor;
+  }
+  .tool-card:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0,0,0,0.4); }
+  .tool-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .tool-icon { font-size: 28px; }
+  .tool-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+  }
+  .tool-tag {
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 100px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+  .tool-why {
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+  }
+  .tool-strengths {
+    list-style: none;
+  }
+  .tool-strengths li {
+    font-size: 11px;
+    color: var(--text-muted);
+    padding: 4px 0;
+    padding-left: 16px;
+    position: relative;
+    line-height: 1.5;
+  }
+  .tool-strengths li::before {
+    content: '▸';
+    position: absolute;
+    left: 0;
+    color: var(--text-dim);
+  }
+  .tool-note {
+    margin-top: 10px;
+    font-size: 11px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border-left: 3px solid;
+    line-height: 1.5;
+  }
+  .tool-primary { font-size: 11px; padding: 3px 8px; border-radius: 6px; font-weight: 600; display: inline-block; margin-bottom: 8px; }
+
+  .vs-note {
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    margin-bottom: 20px;
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--text-muted);
+  }
+  .vs-note strong { color: var(--text); font-family: 'Syne', sans-serif; display: block; margin-bottom: 8px; font-size: 13px; }
+
+  .scenario-label {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+  }
+  .scenario-text {
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+    line-height: 1.45;
+  }
+
+  /* ===== TOOL COLOR VARS ===== */
+  .c-n8n     { --tc: var(--n8n); color: var(--n8n); border-color: rgba(234,75,62,0.3); }
+  .c-gigi    { --tc: var(--gigi); color: var(--gigi); border-color: rgba(13,148,136,0.3); }
+  .c-copilot { --tc: var(--copilot); color: var(--copilot); border-color: rgba(124,58,237,0.3); }
+  .c-thinkai { --tc: var(--thinkai); color: var(--thinkai); border-color: rgba(8,145,178,0.3); }
+  .c-azure   { --tc: var(--azure); color: var(--azure); border-color: rgba(14,165,233,0.3); }
+  .c-power   { --tc: var(--power); color: var(--power); border-color: rgba(139,92,246,0.3); }
+  .c-rpa     { --tc: var(--rpa); color: var(--rpa); border-color: rgba(100,116,139,0.3); }
+
+  .tag-bg-n8n     { background: rgba(234,75,62,0.15); color: var(--n8n); }
+  .tag-bg-gigi    { background: rgba(13,148,136,0.15); color: var(--gigi); }
+  .tag-bg-copilot { background: rgba(124,58,237,0.15); color: var(--copilot); }
+  .tag-bg-thinkai { background: rgba(8,145,178,0.15); color: var(--thinkai); }
+  .tag-bg-azure   { background: rgba(14,165,233,0.15); color: var(--azure); }
+  .tag-bg-power   { background: rgba(139,92,246,0.15); color: var(--power); }
+  .tag-bg-rpa     { background: rgba(100,116,139,0.15); color: var(--rpa); }
+
+  /* GxP / Status badge styles */
+  .badge-recommended { background: rgba(52,211,153,0.15); color: #34d399; border: 1px solid rgba(52,211,153,0.3); }
+  .badge-conditional  { background: rgba(251,146,60,0.15); color: #fb923c; border: 1px solid rgba(251,146,60,0.3); }
+  .badge-notrec       { background: rgba(248,113,113,0.15); color: #f87171; border: 1px solid rgba(248,113,113,0.3); }
+  .badge-gxp          { background: rgba(167,139,250,0.15); color: #a78bfa; border: 1px solid rgba(167,139,250,0.3); }
+
+  /* GxP alert box shown on relevant result nodes */
+  .gxp-alert {
+    background: rgba(167,139,250,0.08);
+    border: 1px solid rgba(167,139,250,0.35);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-top: 16px;
+    font-size: 11px;
+    color: #c4b5fd;
+    line-height: 1.6;
+  }
+  .gxp-alert strong { color: #a78bfa; }
+
+  /* ===== EDIT MODE ===== */
+  .edit-panel {
+    display: none;
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    margin-top: 24px;
+  }
+  .edit-panel.open { display: block; }
+  .edit-panel h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--text);
+  }
+  .edit-panel textarea {
+    width: 100%;
+    min-height: 320px;
+    background: var(--bg);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 16px;
+    resize: vertical;
+    line-height: 1.6;
+    outline: none;
+    transition: var(--transition);
+  }
+  .edit-panel textarea:focus { border-color: var(--accent); }
+  .edit-actions { display: flex; gap: 10px; margin-top: 12px; }
+
+  /* ===== PROGRESS ===== */
+  .progress-bar {
+    height: 2px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-bottom: 32px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+
+  /* ===== FOOTER ===== */
+  footer {
+    text-align: center;
+    padding: 32px 0 0;
+    font-size: 11px;
+    color: var(--text-dim);
+    border-top: 1px solid var(--border);
+    margin-top: 56px;
+  }
+
+  @media (max-width: 600px) {
+    .options-grid { grid-template-columns: 1fr; }
+    .tool-cards-grid { grid-template-columns: 1fr; }
+    .question-card { padding: 22px 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-tag">GSK · Enterprise AI Platforms · Decision Matrix V2</div>
+    <h1>Which Platform Should<br>You Use?</h1>
+    <p class="subtitle">Answer a few questions to find the right GSK-approved platform for your use case. The tree applies the GSK Decision Matrix V2 — including GxP gates, tool status (✅ Recommended / ⚠️ Conditional / 🚫 Not Recommended), and Copilot Studio's agentic AI path. Engage EA/EAI before committing to any platform.</p>
+  </header>
+
+  <!-- LEGEND -->
+  <div class="legend" id="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:var(--azure)"></span>Azure Foundry / Code Orange ✅</div>
+    <div class="legend-item"><span class="legend-dot" style="background:var(--copilot)"></span>Copilot Studio ✅ Agentic / Productivity</div>
+    <div class="legend-item"><span class="legend-dot" style="background:var(--gigi)"></span>GiGi ✅ Conversational</div>
+    <div class="legend-item"><span class="legend-dot" style="background:var(--power)"></span>Power Platform ✅ Citizen Dev</div>
+    <div class="legend-item"><span class="legend-dot" style="background:var(--thinkai)"></span>Thunk ⚠️ Conditional (pilots only)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:var(--n8n)"></span>N8N ⚠️ Conditional (internal + API GW)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:var(--rpa)"></span>Traditional RPA ✅ non-GxP governed only</div>
+    <div class="legend-item" style="border-left:3px solid #ef4444;padding-left:8px;font-size:10px;color:#ef4444">🧬 GxP gate = Azure Foundry / Code Orange only</div>
+  </div>
+
+  <!-- CONTROLS -->
+  <div class="controls">
+    <button class="btn primary" onclick="resetTree()">↺ Start Over</button>
+    <button class="btn" onclick="toggleEdit()">✎ Edit Tree Data</button>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+
+  <!-- BREADCRUMB -->
+  <div class="breadcrumb" id="breadcrumb"></div>
+
+  <!-- MAIN CONTENT -->
+  <div id="treeContent"></div>
+
+  <!-- EDIT PANEL -->
+  <div class="edit-panel" id="editPanel">
+    <h3>✎ Edit Tree Data (JSON)</h3>
+    <p style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">Modify the tree structure below. Changes apply immediately on "Apply".</p>
+    <textarea id="editTextarea"></textarea>
+    <div class="edit-actions">
+      <button class="btn primary" onclick="applyEdit()">Apply Changes</button>
+      <button class="btn" onclick="toggleEdit()">Cancel</button>
+      <button class="btn" onclick="resetEditData()">Reset to Default</button>
+    </div>
+    <div id="editError" style="font-size:11px;color:#f87171;margin-top:8px;"></div>
+  </div>
+
+  <footer>
+    GSK Enterprise AI Platforms — Decision Matrix V2 &nbsp;·&nbsp; 06 March 2026 &nbsp;·&nbsp; Aligned to EA/EAI governance &nbsp;·&nbsp; Engage EA/EAI for architecture reviews
+  </footer>
+</div>
+
+<script>
+// =====================================================
+// TREE DATA — Edit here or via the Edit Panel in UI
+// =====================================================
+const DEFAULT_TREE = {
+  id: "root",
+  question: "What is the primary goal of your initiative?",
+  hint: "Start here. The tree will ask about GxP / regulatory context and technical needs to route you to the correct GSK-approved platform. When in doubt, engage EA/EAI.",
+  number: "Q1",
+  options: [
+    {
+      icon: "💬",
+      label: "Build an AI assistant, chatbot, or conversational automation",
+      desc: "Conversational AI, virtual agents, Q&A bots, agentic AI, or employee-facing assistants",
+      next: "ai_assistant"
+    },
+    {
+      icon: "🔗",
+      label: "Integrate systems & automate workflows",
+      desc: "Connect apps, move data, trigger actions — single-system or complex orchestration",
+      next: "integration"
+    },
+    {
+      icon: "🖥️",
+      label: "Automate tasks on a desktop or legacy system (no API)",
+      desc: "Interact with UI, legacy apps, ERP screens, or apps with no API",
+      next: "legacy_ui"
+    },
+    {
+      icon: "📱",
+      label: "Build low-code apps, forms, or internal tools",
+      desc: "Forms, portals, dashboards, approval flows for business or citizen developers",
+      next: "lowcode_apps"
+    },
+    {
+      icon: "🧠",
+      label: "Build a custom AI model, RAG pipeline, or agentic AI platform",
+      desc: "Fine-tuning, RAG, multi-agent orchestration, LLM ops — pro-code AI development",
+      next: "custom_ai"
+    }
+  ]
+};
+
+const NODES = {
+
+  // ═══════════════════════════════════════════════
+  // BRANCH: AI ASSISTANT / CONVERSATIONAL
+  // ═══════════════════════════════════════════════
+  ai_assistant: {
+    id: "ai_assistant",
+    question: "What is the primary interaction type?",
+    hint: "GSK guidance: GiGi for conversational automation across functions; Copilot Studio for personal productivity and agentic AI; Azure Foundry for custom AI development.",
+    number: "Q2",
+    options: [
+      {
+        icon: "💬",
+        label: "Conversational automation across functions (HR, IT, Finance, CX)",
+        desc: "Chat UI, employee Q&A, cross-functional query handling grounded in enterprise knowledge",
+        next: "gigi_result"
+      },
+      {
+        icon: "🤝",
+        label: "Personal productivity & content generation for M365 employees",
+        desc: "Teams, Outlook, SharePoint users needing AI assistance for daily tasks",
+        next: "ms_copilot_result"
+      },
+      {
+        icon: "🦾",
+        label: "Agentic AI use cases — autonomous agents executing complex tasks",
+        desc: "Event-driven autonomous agents, multi-step orchestration, computer-use automation",
+        next: "copilot_agentic_result"
+      },
+      {
+        icon: "⚗️",
+        label: "Custom AI model, RAG pipeline, or LLM platform development",
+        desc: "Pro-code, fine-tuning, multi-agent orchestration, LLM ops",
+        next: "gxp_check_ai"
+      }
+    ]
+  },
+
+  // ═══════════════════════════════════════════════
+  // GxP GATE — AI / CUSTOM BUILD PATH
+  // ═══════════════════════════════════════════════
+  gxp_check_ai: {
+    id: "gxp_check_ai",
+    question: "Does this involve GxP-regulated data or systems?",
+    hint: "GxP = Good Practice regulations (GMP, GLP, GCP). If data or systems are subject to GxP compliance, only enterprise-validated platforms are permitted.",
+    number: "Q3",
+    options: [
+      {
+        icon: "🧬",
+        label: "Yes — GxP regulated data or systems",
+        desc: "Subject to GMP, GLP, GCP or other regulatory compliance requirements",
+        next: "azure_foundry_result"
+      },
+      {
+        icon: "✅",
+        label: "No — non-GxP, internal, or commercial data",
+        desc: "Standard enterprise data, not subject to GxP compliance",
+        next: "azure_foundry_result"
+      }
+    ]
+  },
+
+  // ═══════════════════════════════════════════════
+  // BRANCH: INTEGRATION / WORKFLOW AUTOMATION
+  // ═══════════════════════════════════════════════
+  integration: {
+    id: "integration",
+    question: "Does this involve GxP-regulated data, or sensitive/regulated systems?",
+    hint: "This is the most important governance gate. GxP or regulated data significantly restricts your tool options. When in doubt, treat as regulated and engage EA/EAI.",
+    number: "Q2",
+    options: [
+      {
+        icon: "🧬",
+        label: "Yes — GxP regulated, or sensitive/regulated data",
+        desc: "Subject to GMP, GLP, GCP, or other compliance requirements",
+        next: "gxp_integration_result"
+      },
+      {
+        icon: "✅",
+        label: "No — non-GxP, internal business data",
+        desc: "Standard enterprise workflows, not subject to GxP compliance",
+        next: "integration_nongxp"
+      }
+    ]
+  },
+
+  integration_nongxp: {
+    id: "integration_nongxp",
+    question: "What best describes the technical nature of your integration?",
+    hint: "Per GSK matrix: Copilot Studio for agentic AI; Power Platform for simple single-system; Azure Foundry for complex/ML; N8N only conditional for internal API-gateway-routed use.",
+    number: "Q3",
+    options: [
+      {
+        icon: "🦾",
+        label: "Agentic AI use cases — autonomous workflow orchestration",
+        desc: "LLM-driven agents, event-triggered automations, agentic orchestration",
+        next: "copilot_agentic_result"
+      },
+      {
+        icon: "🏢",
+        label: "Simple, single-system workflows — governed Microsoft environment",
+        desc: "M365-native flows, Power Automate, citizen dev, quick wins",
+        next: "power_platform_result"
+      },
+      {
+        icon: "⚗️",
+        label: "Complex, scalable, ML-ready or cross-functional integration",
+        desc: "API/ML-ready, pro-code, cross-functional pipelines",
+        next: "azure_foundry_result"
+      },
+      {
+        icon: "🔗",
+        label: "Internal SaaS/API integration — developer-led, API Gateway routed",
+        desc: "Technical integration using GSK API Gateway (Kong) — not regulated data",
+        next: "n8n_conditional_result"
+      }
+    ]
+  },
+
+  // ═══════════════════════════════════════════════
+  // BRANCH: LEGACY / UI AUTOMATION
+  // ═══════════════════════════════════════════════
+  legacy_ui: {
+    id: "legacy_ui",
+    question: "Does the system have an accessible API or modern interface?",
+    hint: "API availability is the key decision point. Even 2–4 weeks of API enablement beats years of brittle RPA maintenance.",
+    number: "Q2",
+    options: [
+      {
+        icon: "✅",
+        label: "Yes — it has an API or can be connected via webhooks",
+        desc: "Modern or semi-modern system with integration capability",
+        next: "integration"
+      },
+      {
+        icon: "❌",
+        label: "No — it's a legacy app, thick client, or ERP screen with no API",
+        desc: "You must click through UI, use keyboard macros, or screen-scrape",
+        next: "rpa_confirm"
+      }
+    ]
+  },
+
+  rpa_confirm: {
+    id: "rpa_confirm",
+    question: "Can the process be re-engineered or the system modernised?",
+    hint: "RPA is a last resort. Even 2–3 weeks of API enablement beats years of brittle RPA maintenance. Engage EA/EAI before committing to RPA.",
+    number: "Q3",
+    options: [
+      {
+        icon: "🔧",
+        label: "Yes — we could expose an API or modernise the system",
+        desc: "Invest in proper integration — route through GSK API Gateway (Kong)",
+        next: "integration"
+      },
+      {
+        icon: "🚫",
+        label: "No — system is frozen, unsupported, or change is permanently blocked",
+        desc: "RPA may be the only viable path — engage EA/EAI and CoE first",
+        next: "gxp_rpa_check"
+      }
+    ]
+  },
+
+  gxp_rpa_check: {
+    id: "gxp_rpa_check",
+    question: "Does this involve GxP-regulated data or a GxP system?",
+    hint: "Traditional RPA is only approved for non-GxP, governed environments with validated bots and audit controls. GxP RPA requires additional validation — engage EA/EAI.",
+    number: "Q4",
+    options: [
+      {
+        icon: "🧬",
+        label: "Yes — GxP regulated system or data",
+        desc: "Subject to GMP, GLP, GCP compliance",
+        next: "rpa_gxp_result"
+      },
+      {
+        icon: "✅",
+        label: "No — non-GxP, governed environment",
+        desc: "Standard business system, audit controls in place",
+        next: "rpa_result"
+      }
+    ]
+  },
+
+  // ═══════════════════════════════════════════════
+  // BRANCH: LOW-CODE APPS
+  // ═══════════════════════════════════════════════
+  lowcode_apps: {
+    id: "lowcode_apps",
+    question: "Does this involve GxP-regulated data or a regulated system?",
+    hint: "GxP compliance restricts which platforms can be used. Power Platform requires validation for GxP use. Azure Foundry / Code Orange is the validated default.",
+    number: "Q2",
+    options: [
+      {
+        icon: "🧬",
+        label: "Yes — GxP regulated data or system",
+        desc: "Subject to GMP, GLP, GCP or regulatory compliance",
+        next: "gxp_integration_result"
+      },
+      {
+        icon: "✅",
+        label: "No — non-GxP, citizen dev or business apps",
+        desc: "Standard internal tools, forms, dashboards",
+        next: "lowcode_nongxp"
+      }
+    ]
+  },
+
+  lowcode_nongxp: {
+    id: "lowcode_nongxp",
+    question: "What is the primary need?",
+    hint: "Power Platform is the recommended citizen-dev platform for quick wins and simple apps with CoE guardrails.",
+    number: "Q3",
+    options: [
+      {
+        icon: "⚡",
+        label: "Quick wins, citizen dev apps, forms, dashboards — governed M365 environment",
+        desc: "Business users building apps; M365/D365 licenses available",
+        next: "power_platform_result"
+      },
+      {
+        icon: "🤝",
+        label: "Apps with embedded AI (LLMs, summarisation, smart recommendations)",
+        desc: "Apps that need AI beyond simple automation",
+        next: "copilot_azure_result"
+      },
+      {
+        icon: "⚗️",
+        label: "Pro-code, scalable, or cross-functional app development",
+        desc: "Developer-led, complex, or cross-system applications",
+        next: "azure_foundry_result"
+      }
+    ]
+  },
+
+  // ═══════════════════════════════════════════════
+  // BRANCH: CUSTOM AI / AGENTIC PIPELINE
+  // ═══════════════════════════════════════════════
+  custom_ai: {
+    id: "custom_ai",
+    question: "Does this involve GxP-regulated data or systems?",
+    hint: "Only enterprise-validated platforms (Azure Foundry / Code Orange) are approved for GxP AI use cases. All LLM use must follow Responsible AI and EAI governance.",
+    number: "Q2",
+    options: [
+      {
+        icon: "🧬",
+        label: "Yes — GxP regulated data or systems",
+        desc: "Must use validated, enterprise-controlled platform only",
+        next: "azure_foundry_result"
+      },
+      {
+        icon: "✅",
+        label: "No — non-GxP, internal or commercial data",
+        desc: "Standard enterprise AI development",
+        next: "custom_ai_nongxp"
+      }
+    ]
+  },
+
+  custom_ai_nongxp: {
+    id: "custom_ai_nongxp",
+    question: "What type of AI capability are you building?",
+    hint: "Copilot Studio is recommended for agentic AI use cases. Azure Foundry for complex/scalable/ML-ready. Thunk for simple AI tasks and pilots (conditional).",
+    number: "Q3",
+    options: [
+      {
+        icon: "🦾",
+        label: "Agentic AI — autonomous agents executing enterprise processes",
+        desc: "Event-driven agents, multi-step orchestration, computer-use, agentic automation",
+        next: "copilot_agentic_result"
+      },
+      {
+        icon: "⚗️",
+        label: "Complex, scalable, ML-ready — fine-tuning, RAG pipelines, LLM ops",
+        desc: "Pro-code AI platform, model deployment, multi-agent pipelines",
+        next: "azure_foundry_result"
+      },
+      {
+        icon: "🧪",
+        label: "Simple AI tasks, pilot use, rapid prototyping (conditional)",
+        desc: "Innovation pilots, proof of concept, non-production agentic workflows",
+        next: "thunk_pilot_result"
+      }
+    ]
+  },
+
+  // ═══════════════════════════════════════════════
+  // RESULT NODES
+  // ═══════════════════════════════════════════════
+
+  gigi_result: {
+    id: "gigi_result",
+    type: "result",
+    scenario: "Conversational automation across enterprise functional use cases",
+    title: "GiGi / Copilot Studio",
+    badge: "✅ Recommended",
+    badgeClass: "tag-bg-gigi",
+    tools: [
+      {
+        key: "gigi",
+        name: "GiGi",
+        icon: "💬",
+        tag: "✅ Recommended — Conversational",
+        tagClass: "tag-bg-gigi",
+        why: "GiGi is the GSK-endorsed conversational AI platform for cross-functional automation. Per GSK enterprise guidance, GiGi is the default for conversational automation across functional use cases (HR, IT, Finance, CX). It provides a consistent, governed chat interface grounded in enterprise knowledge via RAG with Glean.",
+        strengths: [
+          "✅ Recommended for conversational automation across all functions",
+          "Cross-functional coverage: HR, IT, Finance, CX, and beyond",
+          "Consistent chat UI and conversational UX for all employees",
+          "Grounded in enterprise knowledge via RAG with Glean",
+          "LLM Gateway access: OpenAI, Gemini, Claude — all governed",
+          "Follows Responsible AI and EAI governance by design",
+          "⚠️ Review required before production deployment — engage EA/EAI"
+        ],
+        note: "GSK guidance: use GiGi for conversational automation across functional use cases. Review required — engage EA/EAI for architecture sign-off before deployment.",
+        noteClass: "c-gigi"
+      }
+    ],
+    vs: "GiGi is for conversational automation across functions. For personal M365 productivity (Teams, Outlook, SharePoint), use Copilot Studio. For autonomous multi-step agentic tasks (not just conversation), Copilot Studio (agentic) or Thunk are better fits."
+  },
+
+  ms_copilot_result: {
+    id: "ms_copilot_result",
+    type: "result",
+    scenario: "Personal productivity & content generation for M365 employees",
+    title: "Microsoft Copilot Studio",
+    badge: "✅ Recommended",
+    badgeClass: "tag-bg-copilot",
+    tools: [
+      {
+        key: "copilot",
+        name: "MS Copilot Studio",
+        icon: "🤝",
+        tag: "✅ Recommended",
+        tagClass: "tag-bg-copilot",
+        why: "Per GSK enterprise guidance, Copilot Studio is recommended for personal productivity and content generation for M365 employees. It is the Microsoft-native platform for Teams, Outlook and SharePoint users — with autonomous agents, deep reasoning, computer-use, and MCP integration across 1,400+ systems.",
+        strengths: [
+          "✅ Recommended for M365 personal productivity and content generation",
+          "Build autonomous agents reacting to events and executing tasks independently",
+          "Deep reasoning agents for complex analysis (demand forecasting, RFP, lead scoring)",
+          "Computer-use: agents operate apps/websites via virtual mouse & keyboard",
+          "Connects to 1,400+ systems via MCP, Power Platform connectors & Microsoft Graph",
+          "GPT-5 / GPT-5.2 + Anthropic & third-party models available",
+          "Microsoft Entra Agent ID: governed identity for every agent",
+          "⚠️ With DRN approval for some AI use cases — monitor usage/cost at scale"
+        ],
+        note: "GSK matrix: Recommended for M365 productivity. Conditional with DRN approval for broader AI use. Monitor usage/cost when scaling. Engage EA/EAI for complex orchestration.",
+        noteClass: "c-copilot"
+      }
+    ],
+    vs: "For cross-functional conversational automation (HR/IT/Finance chat), use GiGi instead. For autonomous agentic AI use cases beyond M365 productivity, see Copilot Studio Agentic path. For custom model fine-tuning or RAG, use Azure Foundry / Code Orange as the backend."
+  },
+
+  copilot_agentic_result: {
+    id: "copilot_agentic_result",
+    type: "result",
+    scenario: "Agentic AI use cases — autonomous agents executing complex enterprise tasks",
+    title: "Microsoft Copilot Studio",
+    badge: "✅ Recommended — Agentic AI",
+    badgeClass: "tag-bg-copilot",
+    tools: [
+      {
+        key: "copilot",
+        name: "MS Copilot Studio (Agentic)",
+        icon: "🦾",
+        tag: "✅ Recommended — Agentic AI",
+        tagClass: "tag-bg-copilot",
+        why: "Per the GSK Decision Matrix V2, Copilot Studio is explicitly RECOMMENDED for agentic AI use cases under Technical Capability & Fit. It supports fully autonomous agents that react to events, execute multi-step tasks, use computer-use automation, and orchestrate across 1,400+ systems — all within the Microsoft governance framework.",
+        strengths: [
+          "✅ Explicitly recommended by GSK matrix for agentic AI use cases",
+          "Autonomous agents: react to events and execute tasks without human initiation",
+          "Deep reasoning: demand forecasting, RFP analysis, lead scoring, compliance checks",
+          "Computer-use: agents operate any app or website via virtual mouse & keyboard",
+          "Multi-agent orchestration across 1,400+ systems via MCP and Microsoft Graph",
+          "GPT-5.2 + Anthropic Claude + third-party model choice",
+          "Microsoft Entra Agent ID: governed identity for every deployed agent",
+          "Unified governance via Microsoft Defender and Power Platform Admin Center",
+          "⚠️ Complex orchestration needs design review — engage EA/EAI"
+        ],
+        note: "GSK matrix: ✅ Recommended for agentic AI use cases. ⚠️ Conditional for complex orchestration (needs design review). Monitor usage/cost at scale. DRN approval may be required.",
+        noteClass: "c-copilot"
+      }
+    ],
+    vs: "Copilot Studio (Agentic) is the GSK-recommended platform for agentic AI. For custom model fine-tuning or RAG pipelines as the AI backend, pair with Azure Foundry / Code Orange. For simple conversational use cases, GiGi or standard Copilot Studio is sufficient. Thunk is only conditional for simple AI tasks and pilots — not recommended for complex agentic use."
+  },
+
+  azure_foundry_result: {
+    id: "azure_foundry_result",
+    type: "result",
+    scenario: "Complex, scalable, ML-ready AI & integration — pro-code and cross-functional",
+    title: "Azure Foundry / Code Orange",
+    badge: "✅ Recommended — Complex / Scalable / ML-ready",
+    badgeClass: "tag-bg-azure",
+    tools: [
+      {
+        key: "azure",
+        name: "Azure Foundry / Code Orange",
+        icon: "⚗️",
+        tag: "✅ Recommended",
+        tagClass: "tag-bg-azure",
+        why: "Per GSK Decision Matrix V2, Azure Foundry / Code Orange is ✅ Recommended for complex, scalable, ML-ready solutions and is enterprise-grade validated — making it the correct choice for both GxP and non-GxP regulated scenarios, and for any pro-code or cross-functional AI development. Use Code Orange for analytics and AI; use Azure Foundry for building, deploying and governing AI models and agents.",
+        strengths: [
+          "✅ Recommended: complex/scalable/ML-ready AND enterprise-grade validated",
+          "The ONLY approved platform for GxP AI use cases",
+          "Enterprise-controlled and validated — meets all Strategic & Risk Alignment requirements",
+          "11,000+ models: GPT-5.2, Claude (Haiku/Sonnet/Opus), Mistral, Llama",
+          "Foundry Agent Service: multi-agent orchestration, persistent memory, MCP support",
+          "Foundry IQ: RAG engine grounded in enterprise knowledge (Glean, SharePoint, ADLS)",
+          "LLM Gateway access: OpenAI, Gemini, Claude — all following Responsible AI governance",
+          "Fine-tuning, eval frameworks, synthetic data generation, model safety leaderboards",
+          "Foundry Control Plane: RBAC, Azure Policy, Entra ID governance",
+          "⚠️ Requires Pro-Devs and longer build time — engage EA/EAI for architecture review"
+        ],
+        note: "GSK matrix: ✅ Recommended for complex/scalable/ML-ready and Strategic & Risk Alignment. ⚠️ Conditional for Delivery & Experience Fit (requires Pro-Devs, longer build time). Engage EA/EAI before committing.",
+        noteClass: "c-azure"
+      }
+    ],
+    vs: "Azure Foundry / Code Orange requires pro-dev skills and longer build time. For citizen dev quick wins, use Power Platform. For agentic AI use cases (non-GxP), Copilot Studio is the recommended tool. For conversational UX, use GiGi as the front-end layer on top of Foundry."
+  },
+
+  gxp_integration_result: {
+    id: "gxp_integration_result",
+    type: "result",
+    scenario: "GxP-regulated integration — only validated platform approved",
+    title: "Azure Foundry / Code Orange",
+    badge: "✅ Only Approved Option for GxP",
+    badgeClass: "tag-bg-azure",
+    tools: [
+      {
+        key: "azure",
+        name: "Azure Foundry / Code Orange",
+        icon: "🧬",
+        tag: "✅ Only Approved for GxP",
+        tagClass: "tag-bg-azure",
+        why: "For GxP-regulated data and systems, Azure Foundry / Code Orange is the ONLY approved platform — it is enterprise-grade and validated to meet GxP compliance requirements. All other platforms (N8N, Thunk, Power Platform unvalidated) are not approved for GxP use. Traditional RPA is only conditionally permitted with validated bots and audit controls.",
+        strengths: [
+          "✅ Enterprise-grade validated — the only approved option for GxP scenarios",
+          "Meets all Strategic & Risk Alignment compliance requirements",
+          "Full audit trail, data lineage, and governance controls",
+          "Foundry Control Plane: RBAC, Azure Policy, Entra ID",
+          "All LLM use via enterprise LLM Gateway following Responsible AI and EAI governance",
+          "Engage EA/EAI for validation planning and architecture review"
+        ],
+        note: "⚠️ GxP scenario: ONLY Azure Foundry / Code Orange is approved. N8N (external-facing or regulated data) and Thunk (unvalidated) are NOT recommended for GxP use. Traditional RPA is conditionally permitted only with validated bots and audit controls — engage CoE.",
+        noteClass: "c-azure"
+      }
+    ],
+    vs: "This is a GxP-regulated scenario. Do NOT use N8N (not approved for regulated data without controls), Thunk (unvalidated), or unmanaged Power Platform (not approved for GxP without validation). Engage EA/EAI immediately to plan validation approach."
+  },
+
+  power_platform_result: {
+    id: "power_platform_result",
+    type: "result",
+    scenario: "Citizen dev, quick wins, simple single-system workflows — non-GxP governed",
+    title: "Power Platform",
+    badge: "✅ Recommended",
+    badgeClass: "tag-bg-power",
+    tools: [
+      {
+        key: "power",
+        name: "Power Platform",
+        icon: "💜",
+        tag: "✅ Recommended",
+        tagClass: "tag-bg-power",
+        why: "Per GSK Decision Matrix V2, Power Platform is ✅ Recommended for citizen dev / quick wins (Delivery & Experience Fit) and simple, single-system workflows (Technical Capability). It is also the recommended First Mile citizen-development tool with CoE guardrails. Included in most M365/D365 license bundles.",
+        strengths: [
+          "✅ Recommended: citizen dev, quick wins, simple single-system workflows",
+          "✅ Recommended: non-GxP, governed environment with CoE/DLP policies",
+          "First Mile tool for citizen development with CoE guardrails",
+          "Power Apps 'vibe coding': describe your app, agents build it end-to-end",
+          "Power Automate: self-healing automations, AI Recorder (screen + voice → flow)",
+          "AI Builder: document processing, OCR, prediction — no ML expertise needed",
+          "1,400+ connectors: Teams, SharePoint, Dynamics 365, SAP, Salesforce",
+          "Included in most M365/D365 bundles — strong cost advantage",
+          "Governed via Power Platform Admin Center + CoE toolkit",
+          "⚠️ NOT approved unmanaged or for GxP without validation"
+        ],
+        note: "GSK matrix: ✅ Recommended for citizen dev, quick wins, non-GxP governed. ⚠️ Conditional lightly governed (CoE/DLP required). 🚫 Not recommended: unmanaged or GxP without validation.",
+        noteClass: "c-power"
+      }
+    ],
+    vs: "Power Platform is strongest within the Microsoft ecosystem for simple, governed workflows. For complex AI model development or GxP scenarios, use Azure Foundry / Code Orange. For agentic AI use cases, Copilot Studio is the recommended path. For conversational UX across functions, use GiGi."
+  },
+
+  n8n_conditional_result: {
+    id: "n8n_conditional_result",
+    type: "result",
+    scenario: "Internal SaaS/API integration — developer-led, API Gateway routed (conditional)",
+    title: "N8N",
+    badge: "⚠️ Conditional — Review Required",
+    badgeClass: "tag-bg-n8n",
+    tools: [
+      {
+        key: "n8n",
+        name: "N8N",
+        icon: "⚡",
+        tag: "⚠️ Conditional Use",
+        tagClass: "tag-bg-n8n",
+        why: "Per GSK Decision Matrix V2, N8N is ⚠️ CONDITIONAL — only approved for internal use with API Gateway routing (Kong). It is NOT recommended for external-facing or regulated data without controls, and NOT recommended for regulated/mission-critical orchestration without EA support. Requires developer skills and scripting knowledge.",
+        strengths: [
+          "⚠️ Conditional: internal SaaS/API integrations with GSK API Gateway (Kong)",
+          "Must route ALL integrations through GSK API Gateway (Kong)",
+          "Self-hostable — data stays within GSK network boundary",
+          "Code nodes: JavaScript or Python at any step, npm packages",
+          "400+ connectors + HTTP Request for REST/GraphQL APIs",
+          "AI-native: LangChain, RAG, LLM agent workflows",
+          "Per-execution pricing — cost-effective at high volume",
+          "Enterprise: SSO, RBAC, secrets manager, air-gap deploy"
+        ],
+        note: "⚠️ CONDITIONAL USE: (1) Internal use only — not external-facing (2) Must use GSK API Gateway / Kong (3) Not for regulated or GxP data (4) Not for mission-critical orchestration without EA support (5) Engage EA/EAI for review before building.",
+        noteClass: "c-n8n"
+      }
+    ],
+    vs: "N8N is conditional — not a default recommendation. For agentic AI use cases, Copilot Studio is recommended. For complex/scalable/ML-ready, use Azure Foundry / Code Orange. N8N is 🚫 NOT recommended for: external-facing data, regulated data, or mission-critical orchestration without EA support. Scripting skills required — not for citizen developers."
+  },
+
+  thunk_pilot_result: {
+    id: "thunk_pilot_result",
+    type: "result",
+    scenario: "Simple AI tasks, pilots, and rapid prototyping (conditional)",
+    title: "Thunk",
+    badge: "⚠️ Conditional — Pilots & Simple AI Tasks Only",
+    badgeClass: "tag-bg-thinkai",
+    tools: [
+      {
+        key: "thinkai",
+        name: "Thunk",
+        icon: "🧪",
+        tag: "⚠️ Conditional — Pilots Only",
+        tagClass: "tag-bg-thinkai",
+        why: "Per GSK Decision Matrix V2, Thunk is ⚠️ CONDITIONAL — only approved for simple AI tasks and pilot use (Technical Capability & Fit) and rapid prototyping / innovation pilots (Delivery & Experience Fit). It is ✅ Recommended for Delivery & Experience Fit quick pilots. It is NOT recommended for complex or regulated use, and NOT for production-critical workflows.",
+        strengths: [
+          "⚠️ Conditional: simple AI tasks and pilot use only",
+          "✅ Good for: rapid prototyping and innovation pilots",
+          "No-code design: workflows built entirely in natural language",
+          "Human-in-the-loop with granular autonomy settings",
+          "Supports LLM Gateway (OpenAI, Gemini, Claude)",
+          "Fast time-to-value for proof-of-concept workflows",
+          "Private cloud / single-tenant deployment available"
+        ],
+        note: "GSK matrix: ⚠️ Conditional for simple AI tasks / pilot use. 🚫 NOT recommended for complex or regulated use, or production-critical workflows. Must use CoE guardrails. Engage EA/EAI before moving to production.",
+        noteClass: "c-thinkai"
+      }
+    ],
+    vs: "Thunk is for pilots and simple AI tasks only — not production-critical use. For agentic AI use cases at scale, Copilot Studio is the GSK-recommended platform. For complex or regulated scenarios, Azure Foundry / Code Orange is required. Do not use Thunk for regulated data or mission-critical production workflows."
+  },
+
+  copilot_azure_result: {
+    id: "copilot_azure_result",
+    type: "result",
+    scenario: "Low-code apps with embedded AI capabilities",
+    title: "Power Platform + Azure Foundry / Code Orange",
+    badge: "✅ Recommended Combination",
+    badgeClass: "tag-bg-power",
+    tools: [
+      {
+        key: "power",
+        name: "Power Platform",
+        icon: "💜",
+        tag: "✅ App & Workflow Layer",
+        tagClass: "tag-bg-power",
+        why: "Power Platform provides the governed low-code app and workflow layer with Copilot AI features natively embedded. Use AI Builder for document processing and prediction. Recommended for citizen dev with CoE guardrails.",
+        strengths: [
+          "Rapid low-code app development with native Copilot AI",
+          "AI Builder: document processing, OCR, prediction in-app",
+          "Power Automate for self-healing workflow automation",
+          "Teams integration for easy employee distribution",
+          "Governed via CoE toolkit — included in M365 bundles"
+        ],
+        note: "Best when business users own the app and M365 licenses are in place.",
+        noteClass: "c-power"
+      },
+      {
+        key: "azure",
+        name: "Azure Foundry / Code Orange",
+        icon: "⚗️",
+        tag: "✅ AI Backend",
+        tagClass: "tag-bg-azure",
+        why: "When AI logic is too complex for Power Platform's AI Builder, use Azure Foundry / Code Orange as the enterprise-validated AI backend — called via the GSK API Gateway (Kong) from Power Apps or Power Automate. All LLM use must go through the LLM Gateway and follow Responsible AI governance.",
+        strengths: [
+          "Enterprise-controlled, validated AI backend",
+          "Custom LLM endpoints via LLM Gateway (OpenAI, Gemini, Claude)",
+          "RAG with Glean for enterprise knowledge grounding",
+          "Called via GSK API Gateway (Kong) from Power Platform"
+        ],
+        note: "Engage EA/EAI for architecture review. Use when AI Builder complexity is insufficient.",
+        noteClass: "c-azure"
+      }
+    ],
+    vs: "Power Platform handles most citizen-dev AI use cases. Add Azure Foundry / Code Orange when you need custom models, fine-tuning, or AI capabilities beyond AI Builder. All LLM interactions must use the GSK LLM Gateway and follow Responsible AI and EAI governance."
+  },
+
+  rpa_result: {
+    id: "rpa_result",
+    type: "result",
+    scenario: "Non-GxP legacy UI automation — no API available (governed, with audit controls)",
+    title: "Traditional RPA",
+    badge: "✅ Recommended — Non-GxP Governed Only",
+    badgeClass: "tag-bg-rpa",
+    tools: [
+      {
+        key: "rpa",
+        name: "Traditional RPA",
+        icon: "🤖",
+        tag: "✅ Non-GxP Governed",
+        tagClass: "tag-bg-rpa",
+        why: "Per GSK Decision Matrix V2, Traditional RPA is ✅ Recommended for non-GxP governed environments with validated bots and audit controls — and ONLY when no API exists and the system cannot be modernised. It automates by mimicking user interactions on screen. Engage EA/EAI and CoE before proceeding.",
+        strengths: [
+          "✅ Recommended: non-GxP governed, validated bots, audit controls in place",
+          "Works on any system with a UI: ERP, mainframe, SAP screens, thick clients",
+          "No code changes to the target system needed",
+          "Attended and unattended bot modes available",
+          "CoE-governed with audit trails and change management"
+        ],
+        note: "GSK matrix: ✅ Recommended ONLY for non-GxP governed with validated bots & audit controls. 🚫 NOT recommended for: scalable/API/AI-heavy use cases, UX-heavy or fast-changing systems, non-validated bots outside CoE. Engage EA/EAI and CoE before starting.",
+        noteClass: "c-rpa"
+      }
+    ],
+    vs: "RPA tools to consider: UiPath (most mature), Microsoft Power Automate Desktop (free with M365), Automation Anywhere 360. If the system can be partially modernised, route through the GSK API Gateway instead. Thunk or N8N (conditional) can handle API-accessible portions — reducing the RPA footprint significantly."
+  },
+
+  rpa_gxp_result: {
+    id: "rpa_gxp_result",
+    type: "result",
+    scenario: "GxP legacy UI automation — high-risk, engage EA/EAI immediately",
+    title: "⚠️ Stop — Engage EA/EAI",
+    badge: "⚠️ High Risk — EA Review Required",
+    badgeClass: "tag-bg-rpa",
+    tools: [
+      {
+        key: "rpa",
+        name: "Traditional RPA (GxP — Special Validation Required)",
+        icon: "⚠️",
+        tag: "⚠️ Conditional — Special Validation",
+        tagClass: "tag-bg-rpa",
+        why: "GxP RPA is extremely high-risk and requires special validation, audit controls, and EA/EAI sign-off. Traditional RPA is only conditionally permitted for GxP scenarios with validated bots and audit controls. The GSK matrix flags non-validated bots outside CoE as NOT recommended. Engage EA/EAI before any work begins.",
+        strengths: [
+          "⚠️ Only viable if API modernisation is truly impossible",
+          "Requires full validation: IQ, OQ, PQ documentation",
+          "Must have CoE-governed bots with audit controls",
+          "Must engage EA/EAI and Compliance for sign-off",
+          "Every bot change requires re-validation"
+        ],
+        note: "⚠️ STOP — do not proceed without EA/EAI and Compliance approval. GxP RPA requires: (1) EA/EAI architecture review (2) Compliance validation plan (3) CoE governance (4) Audit controls (5) Full validation documentation. Non-validated bots in GxP systems are NOT approved.",
+        noteClass: "c-rpa"
+      }
+    ],
+    vs: "GxP RPA is a last resort within a last resort. Exhaust all API modernisation options first. If API can be exposed, Azure Foundry / Code Orange is the validated path. Only proceed with GxP RPA with full EA/EAI, Compliance, and CoE sign-off."
+  },
+
+  workato_result: {
+    id: "workato_result",
+    type: "result",
+    scenario: "Routing to approved alternatives — Workato not yet onboarded",
+    title: "N8N or Power Platform",
+    badge: "ℹ️ Workato Not Yet Onboarded",
+    badgeClass: "tag-bg-n8n",
+    tools: [
+      {
+        key: "n8n",
+        name: "N8N (Conditional)",
+        icon: "⚡",
+        tag: "⚠️ Conditional",
+        tagClass: "tag-bg-n8n",
+        why: "Workato is not yet onboarded at GSK. For developer-led internal integrations (non-GxP, non-regulated), N8N is conditionally approved with GSK API Gateway (Kong) routing. Engage EA/EAI.",
+        strengths: [
+          "Internal SaaS/API integrations via API Gateway (Kong)",
+          "Self-hosted, developer-controlled",
+          "Not for external-facing or regulated data"
+        ],
+        note: "⚠️ Conditional — must use GSK API Gateway. Engage EA/EAI.",
+        noteClass: "c-n8n"
+      },
+      {
+        key: "power",
+        name: "Power Platform",
+        icon: "💜",
+        tag: "✅ Recommended (M365 stack)",
+        tagClass: "tag-bg-power",
+        why: "For M365-native integrations (Dynamics, SharePoint, Teams), Power Platform with Power Automate is the recommended governed integration path — included in M365/D365 bundles.",
+        strengths: [
+          "1,400+ connectors including SAP, Dynamics 365, Salesforce",
+          "Included in M365 bundles — strong cost advantage",
+          "Governed via CoE toolkit with EA guardrails"
+        ],
+        note: "Best when integration stays within Microsoft ecosystem.",
+        noteClass: "c-power"
+      }
+    ],
+    vs: "Workato is not yet onboarded at GSK. Engage EA/EAI for platform selection. Use N8N (conditional, internal + API Gateway) or Power Platform (M365 stack) as interim options."
+  },
+
+  workato_n8n_result: {
+    id: "workato_n8n_result",
+    type: "result",
+    scenario: "Complex developer-led orchestration — conditional N8N path",
+    title: "N8N (Conditional)",
+    badge: "⚠️ Conditional — Review Required",
+    badgeClass: "tag-bg-n8n",
+    tools: [
+      {
+        key: "n8n",
+        name: "N8N",
+        icon: "⚡",
+        tag: "⚠️ Conditional",
+        tagClass: "tag-bg-n8n",
+        why: "For complex orchestration with external systems (non-GxP, non-regulated), N8N is conditionally approved with GSK API Gateway routing. Not approved for regulated data or mission-critical orchestration without EA support. Workato is not yet onboarded.",
+        strengths: [
+          "Conditional: internal, non-regulated, API Gateway routed",
+          "Self-hosted, code-level control",
+          "LangChain AI agents, RAG, LLM workflows"
+        ],
+        note: "⚠️ Conditional — engage EA/EAI before building. Must use API Gateway (Kong). Not for regulated data.",
+        noteClass: "c-n8n"
+      }
+    ],
+    vs: "N8N is conditional only. For agentic AI, Copilot Studio is recommended. For GxP or regulated data, Azure Foundry / Code Orange is required. Workato not yet onboarded — engage EA/EAI if Workato is the right long-term fit."
+  },
+
+  n8n_apps_result: {
+    id: "n8n_apps_result",
+    type: "result",
+    scenario: "Developer-built internal tooling — conditional N8N path",
+    title: "N8N + Custom Frontend (Conditional)",
+    badge: "⚠️ Conditional — Review Required",
+    badgeClass: "tag-bg-n8n",
+    tools: [
+      {
+        key: "n8n",
+        name: "N8N",
+        icon: "⚡",
+        tag: "⚠️ Conditional",
+        tagClass: "tag-bg-n8n",
+        why: "For developer-built internal tools without Microsoft stack, N8N is conditionally approved as an automation backbone — routed through GSK API Gateway (Kong), internal use only, non-regulated data. Pair with a lightweight frontend (React, internal portal) as needed.",
+        strengths: [
+          "Webhook triggers from any custom frontend",
+          "Flexible backend logic with JavaScript/Python",
+          "Cost-effective for high-volume API-driven workflows",
+          "Self-hosted — data stays within GSK boundary"
+        ],
+        note: "⚠️ Conditional: internal, non-regulated, API Gateway routed, developer-owned. Requires scripting skills — not for citizen dev. Engage EA/EAI.",
+        noteClass: "c-n8n"
+      }
+    ],
+    vs: "If you have M365 licenses, Power Platform is the easier, more governed path — included in your bundle with CoE guardrails. N8N requires developer ownership and is suited to technical teams needing flexibility beyond Power Platform."
+  },
+
+  n8n_workato_apps_result: {
+    id: "n8n_workato_apps_result",
+    type: "result",
+    scenario: "Developer-built internal tooling — conditional N8N path",
+    title: "N8N + Custom Frontend (Conditional)",
+    badge: "⚠️ Conditional — Review Required",
+    badgeClass: "tag-bg-n8n",
+    tools: [
+      {
+        key: "n8n",
+        name: "N8N",
+        icon: "⚡",
+        tag: "⚠️ Conditional",
+        tagClass: "tag-bg-n8n",
+        why: "For developer-built internal tools, N8N is conditionally approved — internal use, non-regulated, via GSK API Gateway. Workato is not yet onboarded at GSK.",
+        strengths: [
+          "Internal webhook-triggered automation backbone",
+          "Flexible code nodes for complex logic",
+          "Self-hosted — data stays within GSK boundary"
+        ],
+        note: "⚠️ Conditional: internal, non-regulated, API Gateway routed. Workato not yet onboarded. Engage EA/EAI.",
+        noteClass: "c-n8n"
+      }
+    ],
+    vs: "Power Platform is the recommended path if M365 licenses are available. N8N is conditional — developer-owned, internal, non-regulated only."
+  },
+
+  azure_n8n_result: {
+    id: "azure_n8n_result",
+    type: "result",
+    scenario: "Pro-code AI or lightweight agentic automation",
+    title: "Azure Foundry / Code Orange (or N8N conditional)",
+    badge: "✅ Azure Foundry Recommended",
+    badgeClass: "tag-bg-azure",
+    tools: [
+      {
+        key: "azure",
+        name: "Azure Foundry / Code Orange",
+        icon: "⚗️",
+        tag: "✅ Recommended",
+        tagClass: "tag-bg-azure",
+        why: "Azure Foundry / Code Orange is the GSK-recommended platform for pro-code, scalable AI. Enterprise-validated, with LLM Gateway access and RAG via Glean. Engage EA/EAI for architecture reviews.",
+        strengths: [
+          "Enterprise-controlled, validated — meets GSK risk alignment",
+          "LLM Gateway: OpenAI, Gemini, Claude",
+          "RAG with Glean grounded in enterprise knowledge",
+          "Full MLOps, fine-tuning, eval, and governance"
+        ],
+        note: "Requires pro-dev skills and longer build time. Engage EA/EAI before committing.",
+        noteClass: "c-azure"
+      },
+      {
+        key: "n8n",
+        name: "N8N (Conditional)",
+        icon: "⚡",
+        tag: "⚠️ Conditional",
+        tagClass: "tag-bg-n8n",
+        why: "N8N's LangChain-powered AI agent nodes can prototype LLM workflows internally — routed through GSK API Gateway. Lighter than a full MLOps platform but conditional: internal, non-regulated use only.",
+        strengths: [
+          "LangChain + LLM Gateway compatible",
+          "Tool-calling agents with memory",
+          "Self-hosted — data stays within GSK boundary"
+        ],
+        note: "⚠️ Conditional — internal, non-regulated, API Gateway routed. Not for mission-critical or regulated use.",
+        noteClass: "c-n8n"
+      }
+    ],
+    vs: "Azure Foundry / Code Orange for production-grade, governed AI. N8N conditional for lighter-weight prototyping only. All LLM use must go through the GSK LLM Gateway and follow Responsible AI and EAI governance."
+  },
+
+  azure_thinkai_result: {
+    id: "azure_thinkai_result",
+    type: "result",
+    scenario: "Complex AI with pilot agentic execution",
+    title: "Azure Foundry / Code Orange + Thunk (pilot)",
+    badge: "✅ Foundry Recommended · ⚠️ Thunk Conditional",
+    badgeClass: "tag-bg-azure",
+    tools: [
+      {
+        key: "azure",
+        name: "Azure Foundry / Code Orange",
+        icon: "⚗️",
+        tag: "✅ Recommended — Model Layer",
+        tagClass: "tag-bg-azure",
+        why: "Azure Foundry / Code Orange is the enterprise-validated AI platform — the correct default for complex, scalable, ML-ready AI. Use for custom RAG pipelines, LLM Gateway access, and production model deployment.",
+        strengths: [
+          "Enterprise-controlled, validated",
+          "RAG with Glean, LLM Gateway access",
+          "Full MLOps and governance",
+          "Production-ready, GxP-capable"
+        ],
+        note: "Recommended. Engage EA/EAI for architecture review.",
+        noteClass: "c-azure"
+      },
+      {
+        key: "thinkai",
+        name: "Thunk (Conditional — Pilot Only)",
+        icon: "🧪",
+        tag: "⚠️ Conditional — Pilot",
+        tagClass: "tag-bg-thinkai",
+        why: "Thunk is conditional for simple AI tasks and pilot use — it can serve as a no-code execution layer on top of Azure Foundry during prototyping. Not approved for complex, regulated, or production-critical use.",
+        strengths: [
+          "No-code natural language agent design",
+          "Fast prototyping on top of LLM Gateway",
+          "Human-in-loop controls"
+        ],
+        note: "⚠️ Conditional — pilot and simple tasks only. Not for production-critical or regulated use.",
+        noteClass: "c-thinkai"
+      }
+    ],
+    vs: "Azure Foundry / Code Orange is the production-grade, governed AI platform. Thunk is conditional for pilots only. For agentic AI at production scale, Copilot Studio (recommended for agentic use cases) is the correct escalation path."
+  }
+
+};
+
+// =====================================================
+// ENGINE
+// =====================================================
+let treeData = JSON.parse(JSON.stringify(DEFAULT_TREE));
+let nodesData = JSON.parse(JSON.stringify(NODES));
+let history = [];
+let currentNode = null;
+
+const TOTAL_STEPS = 3; // approximate for progress bar
+
+function getNode(id) {
+  if (id === "root") return treeData;
+  return nodesData[id] || null;
+}
+
+function resetTree() {
+  history = [];
+  currentNode = null;
+  renderNode("root");
+}
+
+function goBack(index) {
+  if (index < history.length) {
+    history = history.slice(0, index);
+    const nodeId = index === 0 ? "root" : history[index - 1];
+    renderNode(index === 0 ? "root" : history[history.length - 1]);
+  }
+  // re-render current position
+  if (history.length === 0) {
+    renderNode("root");
+  } else {
+    renderNode(history[history.length - 1]);
+  }
+}
+
+function renderBreadcrumb(nodeId) {
+  const bc = document.getElementById("breadcrumb");
+  const items = [];
+  items.push(`<span class="breadcrumb-item" onclick="goBack(0)">Start</span>`);
+
+  for (let i = 0; i < history.length; i++) {
+    const n = getNode(history[i]);
+    if (!n) continue;
+    items.push(`<span class="breadcrumb-sep">›</span>`);
+    if (i < history.length - 1) {
+      items.push(`<span class="breadcrumb-item" onclick="goBack(${i + 1})">${n.title || n.question?.substring(0, 30) + '…'}</span>`);
+    } else {
+      items.push(`<span class="breadcrumb-current">${n.title || n.question?.substring(0, 30) + '…'}</span>`);
+    }
+  }
+  bc.innerHTML = items.join('');
+}
+
+function updateProgress() {
+  const fill = document.getElementById("progressFill");
+  const pct = Math.min(100, (history.length / TOTAL_STEPS) * 100);
+  fill.style.width = pct + "%";
+  if (history.length > 0) {
+    const node = getNode(history[history.length - 1]);
+    if (node && node.type === "result") fill.style.width = "100%";
+  }
+}
+
+function renderNode(nodeId) {
+  currentNode = nodeId;
+  renderBreadcrumb(nodeId);
+  updateProgress();
+
+  const node = getNode(nodeId);
+  const content = document.getElementById("treeContent");
+
+  if (!node) {
+    content.innerHTML = `<div class="question-card"><p style="color:var(--accent4)">Node not found: ${nodeId}</p></div>`;
+    return;
+  }
+
+  if (node.type === "result") {
+    renderResult(node, content);
+  } else {
+    renderQuestion(node, content);
+  }
+}
+
+function renderQuestion(node, content) {
+  const opts = node.options.map((o, i) => `
+    <button class="option-btn" onclick="selectOption('${o.next}')">
+      <span class="option-icon">${o.icon}</span>
+      <div>
+        <span class="option-label">${o.label}</span>
+        <span class="option-desc">${o.desc}</span>
+      </div>
+    </button>
+  `).join('');
+
+  content.innerHTML = `
+    <div class="question-card">
+      <div class="question-number">${node.number || 'Question'}</div>
+      <div class="question-text">${node.question}</div>
+      <div class="question-hint">${node.hint || ''}</div>
+      <div class="options-grid">${opts}</div>
+    </div>
+  `;
+}
+
+function selectOption(nextId) {
+  history.push(nextId);
+  renderNode(nextId);
+}
+
+function renderResult(node, content) {
+  const toolCards = node.tools.map(t => `
+    <div class="tool-card c-${t.key}">
+      <div class="tool-card-header">
+        <span class="tool-icon">${t.icon}</span>
+        <div>
+          <div class="tool-name" style="color:var(--tc)">${t.name}</div>
+          <span class="tool-tag ${t.tagClass}">${t.tag}</span>
+        </div>
+      </div>
+      <div class="tool-why">${t.why}</div>
+      <ul class="tool-strengths">
+        ${t.strengths.map(s => `<li>${s}</li>`).join('')}
+      </ul>
+      <div class="tool-note ${t.noteClass}" style="background:rgba(0,0,0,0.3);border-color:var(--tc)">
+        💡 ${t.note}
+      </div>
+    </div>
+  `).join('');
+
+  content.innerHTML = `
+    <div class="result-section">
+      <div class="question-card" style="border-color:var(--border-light)">
+        <div class="result-header">
+          <span class="result-badge ${node.badgeClass}">${node.badge}</span>
+        </div>
+        <div class="scenario-label">Use Case</div>
+        <div class="scenario-text">${node.scenario}</div>
+        <div class="result-title">${node.title}</div>
+      </div>
+      <div class="tool-cards-grid">${toolCards}</div>
+      ${node.vs ? `<div class="vs-note"><strong>When to mix tools or reconsider:</strong>${node.vs}</div>` : ''}
+      <div class="controls" style="margin-top:16px">
+        <button class="btn primary" onclick="resetTree()">↺ Start a New Scenario</button>
+        ${history.length > 1 ? `<button class="btn" onclick="goBack(${history.length - 1})">← Go Back</button>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+// =====================================================
+// EDIT PANEL
+// =====================================================
+function toggleEdit() {
+  const panel = document.getElementById("editPanel");
+  panel.classList.toggle("open");
+  if (panel.classList.contains("open")) {
+    const combined = { root: treeData, nodes: nodesData };
+    document.getElementById("editTextarea").value = JSON.stringify(combined, null, 2);
+    document.getElementById("editError").textContent = "";
+  }
+}
+
+function applyEdit() {
+  const ta = document.getElementById("editTextarea");
+  const errEl = document.getElementById("editError");
+  try {
+    const parsed = JSON.parse(ta.value);
+    if (!parsed.root || !parsed.nodes) throw new Error("JSON must have 'root' and 'nodes' keys.");
+    treeData = parsed.root;
+    nodesData = parsed.nodes;
+    errEl.textContent = "";
+    document.getElementById("editPanel").classList.remove("open");
+    resetTree();
+  } catch (e) {
+    errEl.textContent = "❌ Error: " + e.message;
+  }
+}
+
+function resetEditData() {
+  treeData = JSON.parse(JSON.stringify(DEFAULT_TREE));
+  nodesData = JSON.parse(JSON.stringify(NODES));
+  const combined = { root: treeData, nodes: nodesData };
+  document.getElementById("editTextarea").value = JSON.stringify(combined, null, 2);
+  document.getElementById("editError").textContent = "✅ Reset to default data. Click Apply to confirm.";
+}
+
+// =====================================================
+// INIT
+// =====================================================
+resetTree();
+</script>
+</body>
+</html>
